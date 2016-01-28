@@ -17,6 +17,9 @@ Deliverator = (function(superClass) {
 
   Deliverator.prototype.fillFrom = function(target) {
     var harvestFunc;
+    if (target == null) {
+      return false;
+    }
     harvestFunc = (function() {
       switch (false) {
         case target.structureType !== STRUCTURE_SPAWN:
@@ -34,14 +37,19 @@ Deliverator = (function(superClass) {
       }
     }).call(this);
     if (harvestFunc() === ERR_NOT_IN_RANGE) {
-      return this.creep.moveTo(target);
+      this.creep.moveTo(target);
     } else if (target.structureType === STRUCTURE_SPAWN) {
-      return target.renewCreep(this.creep);
+      target.renewCreep(this.creep);
     }
+    return true;
   };
 
   Deliverator.prototype.deliverTo = function(target) {
     var deliverFunc;
+    if (target == null) {
+      return false;
+    }
+    console.log("Deliver to " + target.name);
     deliverFunc = (function() {
       switch (false) {
         case target.structureType !== STRUCTURE_CONTROLLER:
@@ -71,26 +79,30 @@ Deliverator = (function(superClass) {
       }
     }).call(this);
     if (deliverFunc() === ERR_NOT_IN_RANGE) {
-      return this.creep.moveTo(target);
+      this.creep.moveTo(target);
     } else if (target.structureType === STRUCTURE_SPAWN) {
-      return target.renewCreep(this.creep);
+      target.renewCreep(this.creep);
     }
+    return true;
   };
 
   Deliverator.prototype.loop = function() {
+    var ret;
     switch (this.creep.memory.state) {
       case 'fill':
-        this.fillFrom(this.sourceFn());
+        ret = this.fillFrom(this.sourceFn());
         break;
       case 'deliver':
-        this.deliverTo(this.targetFn());
+        ret = this.deliverTo(this.targetFn());
     }
     switch (false) {
       case !this.fullEnergy():
-        return this.setState('deliver');
+        this.setState('deliver');
+        break;
       case this.creep.carry.energy !== 0:
-        return this.setState('fill');
+        this.setState('fill');
     }
+    return ret;
   };
 
   return Deliverator;

@@ -4,7 +4,8 @@ class Deliverator extends Agent
     super(creep)
     @creep.memory.state ||= 'fill'
   fillFrom: (target) ->
-  	# Fill from target structure, renew if structure is a spawn
+    # Fill from target structure, renew if structure is a spawn
+    return false unless target?
     harvestFunc = switch
       when target.structureType == STRUCTURE_SPAWN
         => target.transferEnergy(@creep)
@@ -15,32 +16,36 @@ class Deliverator extends Agent
       @creep.moveTo(target)
     else if target.structureType == STRUCTURE_SPAWN
       target.renewCreep(@creep)
+    true
 
   deliverTo: (target) ->
+    return false unless target?
+    console.log("Deliver to #{target.name}")
     deliverFunc = switch
-     	when target.structureType == STRUCTURE_CONTROLLER
-     		 => @creep.upgradeController(target)
-   	  when target.constructor == ConstructionSite
+      when target.structureType == STRUCTURE_CONTROLLER
+         => @creep.upgradeController(target)
+      when target.constructor == ConstructionSite
          => @creep.build(target)
       when target.structureType == STRUCTURE_WALL || target.structureType == STRUCTURE_ROAD
         => @creep.repair(target)
       else
-     		 => @creep.transfer(target, RESOURCE_ENERGY)
+         => @creep.transfer(target, RESOURCE_ENERGY)
 
-   	if deliverFunc() == ERR_NOT_IN_RANGE
-   		@creep.moveTo(target)
+    if deliverFunc() == ERR_NOT_IN_RANGE
+      @creep.moveTo(target)
     else if target.structureType == STRUCTURE_SPAWN
       target.renewCreep(@creep)
+    true
 
-  loop: () ->
-  	switch @creep.memory.state
-  		when 'fill' then @fillFrom(@sourceFn())
-  		when 'deliver' then @deliverTo(@targetFn())
-
-  	switch
-  		when @fullEnergy()
-  			@setState('deliver')
-  		when @creep.carry.energy == 0
-  			@setState('fill')
+  loop: ->
+    switch @creep.memory.state
+      when 'fill' then ret = @fillFrom(@sourceFn())
+      when 'deliver' then ret = @deliverTo(@targetFn())
+    switch
+      when @fullEnergy()
+        @setState('deliver')
+      when @creep.carry.energy == 0
+        @setState('fill')
+    return ret
 
 module.exports = Deliverator
