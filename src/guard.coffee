@@ -2,7 +2,7 @@ PathUtils = require('path_utils')
 module.exports = (creep) ->
 
   chooseTarget = ->
-    targets = PathUtils.sortByDistance(creep, creep.room.find(FIND_HOSTILE_CREEPS))
+    targets = new PathUtils(creep).sortByDistance(creep.room.find(FIND_HOSTILE_CREEPS))
     return targets[0]
 
   target = chooseTarget(creep)

@@ -1,3 +1,4 @@
+PathUtils = require('path_utils')
 class Agent
   constructor: (creep) ->
     @creep = creep
@@ -10,7 +11,13 @@ class Agent
       sources = @creep.room.find(FIND_SOURCES)
       @harvestFromSource(sources[0])
     else
-      @giveEnergyToSpawn(@primarySpawn())
+      @giveEnergyToSpawn(@nearestEnergyNeed())
+
+  nearestEnergyNeed: ->
+    targets = @creep.room.find(FIND_MY_STRUCTURES).filter((c) -> (c.structureType == 'extension' || c.structureType == 'spawn') && c.energy < c.energyCapacity)
+    new PathUtils(@creep).sortByDistance(targets)
+    return targets[0] unless targets.length == 0
+    @primarySpawn() # Backup target
 
   harvestFromSource: (source) ->
     if @creep.harvest(source) == ERR_NOT_IN_RANGE
@@ -23,7 +30,7 @@ class Agent
     if @creep.transfer(spawn, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE
       @creep.moveTo(spawn)
     else 
-      spawn.renewCreep(@creep)
+      spawn.renewCreep(@creep) if spawn.renewCreep?
 
   fullEnergy: ->
     return @creep.carry.energy >= @creep.carryCapacity

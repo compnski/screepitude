@@ -6,7 +6,7 @@ module.exports = function(creep) {
   var chooseTarget, err, target;
   chooseTarget = function() {
     var targets;
-    targets = PathUtils.sortByDistance(creep, creep.room.find(FIND_HOSTILE_CREEPS));
+    targets = new PathUtils(creep).sortByDistance(creep.room.find(FIND_HOSTILE_CREEPS));
     return targets[0];
   };
   target = chooseTarget(creep);

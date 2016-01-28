@@ -11,8 +11,8 @@ primaryRoom = primarySpawn.room
 
 targetCounts = 
   repair: 2
-  source2: 8
-  harvester: 8
+  source2: 7
+  harvester: 7
   builder: 2
   upgrader: 3
   guard: 3

@@ -1,26 +1,31 @@
-var PathUtils;
+var PathUtils,
+  bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
 PathUtils = (function() {
-  function PathUtils() {}
+  function PathUtils(pos) {
+    this.pos = pos;
+    this.distanceComparator = bind(this.distanceComparator, this);
+    if (this.pos.pos != null) {
+      this.pos = this.pos.pos;
+    }
+  }
 
-  PathUtils.sortByDistance = function(from, targets) {
-    return targets.sort(this.distanceComparatorFactory(from.pos));
+  PathUtils.prototype.sortByDistance = function(targets) {
+    return targets.sort(this.distanceComparator);
   };
 
-  PathUtils.distance = function(a, b) {
-    return a.getRangeTo(b);
+  PathUtils.prototype.distance = function(target) {
+    return this.pos.getRangeTo(target);
   };
 
-  PathUtils.distanceComparatorFactory = function(from) {
-    return function(a, b) {
-      if (a.distance == null) {
-        a.distance = PathUtils.distance(from, a);
-      }
-      if (b.distance == null) {
-        b.distance = PathUtils.distance(from, b);
-      }
-      return a.distance - b.distance;
-    };
+  PathUtils.prototype.distanceComparator = function(a, b) {
+    if (a.distance == null) {
+      a.distance = this.distance(a);
+    }
+    if (b.distance == null) {
+      b.distance = this.distance(b);
+    }
+    return a.distance - b.distance;
   };
 
   return PathUtils;

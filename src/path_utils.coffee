@@ -1,15 +1,17 @@
 class PathUtils
 
-	@sortByDistance: (from, targets) ->
-		targets.sort(@distanceComparatorFactory(from.pos))
+	constructor: (@pos) ->
+		@pos = @pos.pos if @pos.pos?
 
-	@distance: (a, b) ->
-		a.getRangeTo(b)
+	sortByDistance: (targets) ->
+		targets.sort(@distanceComparator)
 
-	@distanceComparatorFactory: (from) ->
-		return (a,b) ->
-			a.distance ?= PathUtils.distance(from, a)
-			b.distance ?= PathUtils.distance(from, b)
-			return a.distance - b.distance
+	distance: (target) ->
+		@pos.getRangeTo(target)
+
+	distanceComparator: (a,b) =>
+		a.distance ?= @distance(a)
+		b.distance ?= @distance(b)
+		return a.distance - b.distance
 
 module.exports = PathUtils

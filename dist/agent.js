@@ -1,5 +1,7 @@
-var Agent,
+var Agent, PathUtils,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+
+PathUtils = require('path_utils');
 
 Agent = (function() {
   function Agent(creep) {
@@ -17,8 +19,20 @@ Agent = (function() {
       sources = this.creep.room.find(FIND_SOURCES);
       return this.harvestFromSource(sources[0]);
     } else {
-      return this.giveEnergyToSpawn(this.primarySpawn());
+      return this.giveEnergyToSpawn(this.nearestEnergyNeed());
     }
+  };
+
+  Agent.prototype.nearestEnergyNeed = function() {
+    var targets;
+    targets = this.creep.room.find(FIND_MY_STRUCTURES).filter(function(c) {
+      return (c.structureType === 'extension' || c.structureType === 'spawn') && c.energy < c.energyCapacity;
+    });
+    new PathUtils(this.creep).sortByDistance(targets);
+    if (targets.length !== 0) {
+      return targets[0];
+    }
+    return this.primarySpawn();
   };
 
   Agent.prototype.harvestFromSource = function(source) {
@@ -35,7 +49,9 @@ Agent = (function() {
     if (this.creep.transfer(spawn, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
       return this.creep.moveTo(spawn);
     } else {
-      return spawn.renewCreep(this.creep);
+      if (spawn.renewCreep != null) {
+        return spawn.renewCreep(this.creep);
+      }
     }
   };
 
