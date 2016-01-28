@@ -2,6 +2,9 @@ class Agent
   constructor: (creep) ->
     @creep = creep
 
+  setState: (state) ->
+    @creep.memory.state = state
+
   dumbHarvesting: ->
     if !@fullEnergy()
       sources = @creep.room.find(FIND_SOURCES)
@@ -13,7 +16,7 @@ class Agent
     if @creep.harvest(source) == ERR_NOT_IN_RANGE
       @creep.moveTo(source)
 
-  primarySpawn: ->
+  primarySpawn: =>
     Game.spawns.Spawn1
 
   giveEnergyToSpawn: (spawn) ->

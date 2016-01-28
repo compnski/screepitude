@@ -4,10 +4,10 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-screeps');
 
     grunt.initConfig({
-        pkg: grunt.file.readJSON('package.json'),
-        secret: grunt.file.readJSON('secret.json'),
-        screeps: {
-            options: {
+        "pkg": grunt.file.readJSON('package.json'),
+        "secret": grunt.file.readJSON('secret.json'),
+        "screeps": {
+            "options": {
                 email: '<%= secret.email %>',
                 password: '<%= secret.password %>',
                 branch: 'default',
@@ -17,9 +17,9 @@ module.exports = function(grunt) {
                 src: ['dist/*.js']
             }
         },
-        coffee: {
-            coffee_to_js: {
-                options: {
+        "coffee": {
+            "coffee_to_js": {
+                "options": {
                   bare: true,
                   sourceMap: true
                 },
@@ -32,5 +32,5 @@ module.exports = function(grunt) {
             }
         }
     });
-    grunt.registerTask('default', ['coffee'])
+    grunt.registerTask('default', ['coffee']);
 }

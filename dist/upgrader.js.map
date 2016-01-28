@@ -1,0 +1,10 @@
+{
+  "version": 3,
+  "file": "upgrader.js",
+  "sourceRoot": "../src/",
+  "sources": [
+    "upgrader.coffee"
+  ],
+  "names": [],
+  "mappings": "AAAA,IAAA,qBAAA;EAAA;;;AAAA,WAAA,GAAc,OAAA,CAAQ,aAAR;;AACR;;;EACS,kBAAC,KAAD;IACZ,0CAAM,KAAN,EAAa,IAAC,CAAA,YAAd,EAA4B,IAAC,CAAA,cAA7B;EADY;;qBAGb,cAAA,GAAgB,SAAA;WACd,IAAC,CAAA,KAAK,CAAC,IAAI,CAAC;EADE;;qBAGhB,IAAA,GAAM,SAAA;WACL,iCAAA;EADK;;;;GAPe;;AAYvB,MAAM,CAAC,OAAP,GAAiB"
+}

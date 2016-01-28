@@ -1,9 +1,15 @@
-var Agent;
+var Agent,
+  bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
 Agent = (function() {
   function Agent(creep) {
+    this.primarySpawn = bind(this.primarySpawn, this);
     this.creep = creep;
   }
+
+  Agent.prototype.setState = function(state) {
+    return this.creep.memory.state = state;
+  };
 
   Agent.prototype.dumbHarvesting = function() {
     var sources;
