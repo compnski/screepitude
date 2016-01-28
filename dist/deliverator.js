@@ -16,7 +16,24 @@ Deliverator = (function(superClass) {
   }
 
   Deliverator.prototype.fillFrom = function(target) {
-    if (target.transferEnergy(this.creep) === ERR_NOT_IN_RANGE) {
+    var harvestFunc;
+    harvestFunc = (function() {
+      switch (false) {
+        case target.structureType !== STRUCTURE_SPAWN:
+          return (function(_this) {
+            return function() {
+              return target.transferEnergy(_this.creep);
+            };
+          })(this);
+        case target.constructor !== Source:
+          return (function(_this) {
+            return function() {
+              return _this.creep.harvest(target);
+            };
+          })(this);
+      }
+    }).call(this);
+    if (harvestFunc() === ERR_NOT_IN_RANGE) {
       return this.creep.moveTo(target);
     } else if (target.structureType === STRUCTURE_SPAWN) {
       return target.renewCreep(this.creep);
@@ -25,21 +42,38 @@ Deliverator = (function(superClass) {
 
   Deliverator.prototype.deliverTo = function(target) {
     var deliverFunc;
-    if (target.structureType === STRUCTURE_CONTROLLER) {
-      deliverFunc = (function(_this) {
-        return function() {
-          return _this.creep.upgradeController(target);
-        };
-      })(this);
-    } else {
-      deliverFunc = (function(_this) {
-        return function() {
-          return _this.creep.transfer(target, RESOURCE_ENERGY);
-        };
-      })(this);
-    }
+    deliverFunc = (function() {
+      switch (false) {
+        case target.structureType !== STRUCTURE_CONTROLLER:
+          return (function(_this) {
+            return function() {
+              return _this.creep.upgradeController(target);
+            };
+          })(this);
+        case target.constructor !== ConstructionSite:
+          return (function(_this) {
+            return function() {
+              return _this.creep.build(target);
+            };
+          })(this);
+        case !(target.structurType === Wall || target.structureType === Road):
+          return (function(_this) {
+            return function() {
+              return _this.creep.repair(target);
+            };
+          })(this);
+        default:
+          return (function(_this) {
+            return function() {
+              return _this.creep.transfer(target, RESOURCE_ENERGY);
+            };
+          })(this);
+      }
+    }).call(this);
     if (deliverFunc() === ERR_NOT_IN_RANGE) {
       return this.creep.moveTo(target);
+    } else if (target.structureType === STRUCTURE_SPAWN) {
+      return target.renewCreep(this.creep);
     }
   };
 

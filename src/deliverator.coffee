@@ -5,18 +5,32 @@ class Deliverator extends Agent
     @creep.memory.state ||= 'fill'
   fillFrom: (target) ->
   	# Fill from target structure, renew if structure is a spawn
-    if target.transferEnergy(@creep) == ERR_NOT_IN_RANGE
+    harvestFunc = switch
+      when target.structureType == STRUCTURE_SPAWN
+        => target.transferEnergy(@creep)
+      when target.constructor == Source
+        => @creep.harvest(target)
+
+    if harvestFunc() == ERR_NOT_IN_RANGE
       @creep.moveTo(target)
     else if target.structureType == STRUCTURE_SPAWN
       target.renewCreep(@creep)
 
   deliverTo: (target) ->
-   	if target.structureType == STRUCTURE_CONTROLLER
-   		deliverFunc = => @creep.upgradeController(target)
-   	else
-   		deliverFunc = => @creep.transfer(target, RESOURCE_ENERGY)
+    deliverFunc = switch
+     	when target.structureType == STRUCTURE_CONTROLLER
+     		 => @creep.upgradeController(target)
+   	  when target.constructor == ConstructionSite
+         => @creep.build(target)
+      when target.structurType == Wall || target.structureType == Road
+        => @creep.repair(target)
+      else
+     		 => @creep.transfer(target, RESOURCE_ENERGY)
+
    	if deliverFunc() == ERR_NOT_IN_RANGE
    		@creep.moveTo(target)
+    else if target.structureType == STRUCTURE_SPAWN
+      target.renewCreep(@creep)
 
   loop: () ->
   	switch @creep.memory.state

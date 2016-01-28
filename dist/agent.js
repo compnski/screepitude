@@ -11,7 +11,7 @@ Agent = (function() {
     return this.creep.memory.state = state;
   };
 
-  Agent.prototype.dumbHarvesting = function() {
+  Agent.prototype.loop = function() {
     var sources;
     if (!this.fullEnergy()) {
       sources = this.creep.room.find(FIND_SOURCES);

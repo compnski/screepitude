@@ -5,7 +5,7 @@ class Agent
   setState: (state) ->
     @creep.memory.state = state
 
-  dumbHarvesting: ->
+  loop: ->
     if !@fullEnergy()
       sources = @creep.room.find(FIND_SOURCES)
       @harvestFromSource(sources[0])
