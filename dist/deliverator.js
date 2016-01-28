@@ -49,7 +49,7 @@ Deliverator = (function(superClass) {
     if (target == null) {
       return false;
     }
-    console.log("Deliver to " + target.name);
+    console.log("Deliver to " + (target.name || target.structureType || target.constructor));
     deliverFunc = (function() {
       switch (false) {
         case target.structureType !== STRUCTURE_CONTROLLER:

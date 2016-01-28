@@ -19,18 +19,17 @@ room = new Room(primaryRoom, targetCounts)
 room.loop()
 harvestOnly = room.spawnFailed
 for name, creep of Game.creeps
-  agent = switch creep.memory.role.split(":")[0]
-    when !harvestOnly && 'upgrader' then new Upgrader(creep)
-    when !harvestOnly && 'builder' then new Builder(creep)
-    when 'source2' then new Deliverator(creep, (-> primaryRoom.find(FIND_SOURCES)[1]), (-> primarySpawn))
+  switch creep.memory.role.split(":")[0]
+    when !harvestOnly && 'upgrader' then new Upgrader(creep).loop()
+    when !harvestOnly && 'builder' then new Builder(creep).loop()
+    when 'source2' then new Deliverator(creep, (-> primaryRoom.find(FIND_SOURCES)[1]), (-> primarySpawn)).loop()
     when 'repair'
       (new Deliverator(creep, 
         (-> primarySpawn), 
         (-> primaryRoom.find(FIND_STRUCTURES).filter((s)->s.hits < s.hitsMax )[0])).loop() || 
        new Builder(creep).loop())
-    else agent = new Agent(creep)
-  agent.loop()
-
+    else 
+      new Agent(creep).loop()
 
 mines = Mine.allInRoom(primaryRoom)
 for mine in mines

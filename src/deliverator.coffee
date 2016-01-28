@@ -20,7 +20,7 @@ class Deliverator extends Agent
 
   deliverTo: (target) ->
     return false unless target?
-    console.log("Deliver to #{target.name}")
+    console.log("Deliver to #{target.name || target.structureType || target.constructor}")
     deliverFunc = switch
       when target.structureType == STRUCTURE_CONTROLLER
          => @creep.upgradeController(target)
