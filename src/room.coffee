@@ -14,6 +14,8 @@ class Room
 				[WORK, CARRY, MOVE]
 			when "upgrader"
 				[WORK, WORK, CARRY, MOVE]
+			when "guard"
+				[TOUGH, TOUGH, TOUGH, TOUGH, MOVE, MOVE, ATTACK, ATTACK]
 			else
 				[WORK, CARRY, MOVE]
 						

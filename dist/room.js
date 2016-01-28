@@ -20,6 +20,8 @@ Room = (function() {
         return [WORK, CARRY, MOVE];
       case "upgrader":
         return [WORK, WORK, CARRY, MOVE];
+      case "guard":
+        return [TOUGH, TOUGH, TOUGH, TOUGH, MOVE, MOVE, ATTACK, ATTACK];
       default:
         return [WORK, CARRY, MOVE];
     }
