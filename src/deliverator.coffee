@@ -22,7 +22,7 @@ class Deliverator extends Agent
      		 => @creep.upgradeController(target)
    	  when target.constructor == ConstructionSite
          => @creep.build(target)
-      when target.structurType == Wall || target.structureType == Road
+      when target.structureType == STRUCTURE_WALL || target.structureType == STRUCTURE_ROAD
         => @creep.repair(target)
       else
      		 => @creep.transfer(target, RESOURCE_ENERGY)

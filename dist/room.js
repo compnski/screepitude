@@ -37,7 +37,10 @@ Room = (function() {
     parts = this.partsForRole(role);
     memory = this.memoryForRole(role);
     ret = spawnFrom.createCreep(parts, name, memory);
-    if (ret !== ERR_NOT_ENOUGH_RESOURCES) {
+    if (ret === ERR_NOT_ENOUGH_RESOURCES) {
+      console.log("Can't spawn " + role + " due to resources -- have " + spawnFrom.energy);
+      return this.spawnFailed = true;
+    } else {
       return console.log("Spawning " + role + " named " + name + " from " + spawnFrom.name + " with " + parts + " and " + (JSON.stringify(memory)) + ", got " + ret);
     }
   };

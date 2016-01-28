@@ -56,7 +56,7 @@ Deliverator = (function(superClass) {
               return _this.creep.build(target);
             };
           })(this);
-        case !(target.structurType === Wall || target.structureType === Road):
+        case !(target.structureType === STRUCTURE_WALL || target.structureType === STRUCTURE_ROAD):
           return (function(_this) {
             return function() {
               return _this.creep.repair(target);

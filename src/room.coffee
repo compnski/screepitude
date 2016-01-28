@@ -25,7 +25,10 @@ class Room
 		parts = @partsForRole(role)
 		memory = @memoryForRole(role)
 		ret = spawnFrom.createCreep(parts, name, memory)
-		if ret != ERR_NOT_ENOUGH_RESOURCES
+		if ret == ERR_NOT_ENOUGH_RESOURCES
+			console.log("Can't spawn #{role} due to resources -- have #{spawnFrom.energy}")
+			@spawnFailed = true
+		else
 			console.log("Spawning #{role} named #{name} from #{spawnFrom.name} with #{parts} and #{JSON.stringify(memory)}, got #{ret}")
 
 	loop: ->
