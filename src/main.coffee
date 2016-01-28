@@ -27,10 +27,10 @@ harvestOnly = room.spawnFailed
 for name, creep of Game.creeps
   try
     switch creep.memory.role.split(":")[0]
-      when 'guard' then Guard(creep)
+      when "guard" then Guard(creep)
       when !harvestOnly && 'upgrader' then new Upgrader(creep).loop()
-      when 'builder' then new Builder(creep).loop()
-      when 'source2' then new Deliverator(creep, (-> primaryRoom.find(FIND_SOURCES)[1]), (-> primarySpawn)).loop()
+      when "builder" then new Builder(creep).loop()
+      when "source2" then new Deliverator(creep, (-> primaryRoom.find(FIND_SOURCES)[1]), (-> primarySpawn)).loop()
       when 'repair'
         (new Deliverator(creep, 
           (-> primarySpawn), 
