@@ -19,12 +19,12 @@ primaryRoom = primarySpawn.room
 targetCounts = 
   source1:2
   transporter:5
-  source2: 2
+  source2: 4
   mega_miner: 3
-  mega_miner2: 1
+  mega_miner2: 0
   repair: 4
   builder: 2
-  upgrader: 4
+  upgrader: 3
   guard: 3
 
 try 
@@ -41,6 +41,7 @@ try
   for mine in mines
     console.log('source', mine.source.id, 'has', mine.capacity(), 'slots for mining')
 catch e
+  throw e if Config.ThrowExceptions
   console.log("Caught exception! #{e}")
 
 for name, creep of Game.creeps
@@ -61,4 +62,5 @@ for name, creep of Game.creeps
           (-> primaryRoom.find(FIND_STRUCTURES).filter((s)->s.hits < s.hitsMax )[0])).loop() unless Config.NoRepairs  ) || 
          (new Builder(creep).loop() unless Config.NoBuilders))
   catch e
+    throw e if Config.ThrowExceptions
     console.log("Caught exception! #{e}")
