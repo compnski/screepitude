@@ -1,4 +1,5 @@
 Agent = require('agent')
+Config = require('config')
 class Deliverator extends Agent
   constructor: (creep, @sourceFn, @targetFn) ->
     super(creep)
@@ -9,13 +10,15 @@ class Deliverator extends Agent
     harvestFunc = switch
       when target.structureType == STRUCTURE_SPAWN
         => target.transferEnergy(@creep)
+      when target.transferEnergy?
+        => target.transferEnergy(@creep)
       when target.constructor == Source
         => @creep.harvest(target)
 
     if harvestFunc() == ERR_NOT_IN_RANGE
       @creep.moveTo(target)
     else if target.structureType == STRUCTURE_SPAWN
-      target.renewCreep(@creep)
+      target.renewCreep(@creep) if @creep.ticksToLive < parseInt(Config.CreepRenewEnergy)
     true
 
   deliverTo: (target) ->
@@ -31,10 +34,10 @@ class Deliverator extends Agent
       else
          => @creep.transfer(target, RESOURCE_ENERGY)
 
-    if deliverFunc() == ERR_NOT_IN_RANGE
+    if (@creep.memory.last_err = deliverFunc()) == ERR_NOT_IN_RANGE
       @creep.moveTo(target)
     else if target.structureType == STRUCTURE_SPAWN
-      target.renewCreep(@creep)
+      target.renewCreep(@creep) if @creep.ticksToLive < parseInt(Config.CreepRenewEnergy)
     true
 
   loop: ->

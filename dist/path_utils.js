@@ -2,12 +2,10 @@ var PathUtils,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
 PathUtils = (function() {
-  function PathUtils(pos) {
-    this.pos = pos;
+  function PathUtils(creep) {
+    this.creep = creep;
     this.distanceComparator = bind(this.distanceComparator, this);
-    if (this.pos.pos != null) {
-      this.pos = this.pos.pos;
-    }
+    this.pos = this.creep.pos;
   }
 
   PathUtils.prototype.sortByDistance = function(targets) {
@@ -26,6 +24,28 @@ PathUtils = (function() {
       b.distance = this.distance(b);
     }
     return a.distance - b.distance;
+  };
+
+  PathUtils.prototype.nearestEnergyNeed = function() {
+    var targets;
+    targets = this.creep.room.find(FIND_MY_STRUCTURES).filter(function(c) {
+      return (c.structureType === 'extension' || c.structureType === 'spawn') && c.energy < c.energyCapacity;
+    });
+    this.sortByDistance(targets);
+    if (targets.length !== 0) {
+      return targets[0];
+    }
+  };
+
+  PathUtils.prototype.nearestEnergyProvider = function() {
+    var targets;
+    targets = this.creep.room.find(FIND_MY_CREEPS).filter(function(c) {
+      return c.memory.energyProvider && c.carry.energy > 10;
+    });
+    this.sortByDistance(targets);
+    if (targets.length !== 0) {
+      return targets[0];
+    }
   };
 
   return PathUtils;

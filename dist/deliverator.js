@@ -1,8 +1,10 @@
-var Agent, Deliverator,
+var Agent, Config, Deliverator,
   extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
   hasProp = {}.hasOwnProperty;
 
 Agent = require('agent');
+
+Config = require('config');
 
 Deliverator = (function(superClass) {
   extend(Deliverator, superClass);
@@ -28,6 +30,12 @@ Deliverator = (function(superClass) {
               return target.transferEnergy(_this.creep);
             };
           })(this);
+        case target.transferEnergy == null:
+          return (function(_this) {
+            return function() {
+              return target.transferEnergy(_this.creep);
+            };
+          })(this);
         case target.constructor !== Source:
           return (function(_this) {
             return function() {
@@ -39,7 +47,9 @@ Deliverator = (function(superClass) {
     if (harvestFunc() === ERR_NOT_IN_RANGE) {
       this.creep.moveTo(target);
     } else if (target.structureType === STRUCTURE_SPAWN) {
-      target.renewCreep(this.creep);
+      if (this.creep.ticksToLive < parseInt(Config.CreepRenewEnergy)) {
+        target.renewCreep(this.creep);
+      }
     }
     return true;
   };
@@ -78,10 +88,12 @@ Deliverator = (function(superClass) {
           })(this);
       }
     }).call(this);
-    if (deliverFunc() === ERR_NOT_IN_RANGE) {
+    if ((this.creep.memory.last_err = deliverFunc()) === ERR_NOT_IN_RANGE) {
       this.creep.moveTo(target);
     } else if (target.structureType === STRUCTURE_SPAWN) {
-      target.renewCreep(this.creep);
+      if (this.creep.ticksToLive < parseInt(Config.CreepRenewEnergy)) {
+        target.renewCreep(this.creep);
+      }
     }
     return true;
   };

@@ -1,7 +1,9 @@
-var Agent, PathUtils,
+var Agent, Config, PathUtils,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
 PathUtils = require('path_utils');
+
+Config = require('config');
 
 Agent = (function() {
   function Agent(creep) {
@@ -23,18 +25,6 @@ Agent = (function() {
     }
   };
 
-  Agent.prototype.nearestEnergyNeed = function() {
-    var targets;
-    targets = this.creep.room.find(FIND_MY_STRUCTURES).filter(function(c) {
-      return (c.structureType === 'extension' || c.structureType === 'spawn') && c.energy < c.energyCapacity;
-    });
-    new PathUtils(this.creep).sortByDistance(targets);
-    if (targets.length !== 0) {
-      return targets[0];
-    }
-    return this.primarySpawn();
-  };
-
   Agent.prototype.harvestFromSource = function(source) {
     if (this.creep.harvest(source) === ERR_NOT_IN_RANGE) {
       return this.creep.moveTo(source);
@@ -49,7 +39,7 @@ Agent = (function() {
     if (this.creep.transfer(spawn, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
       return this.creep.moveTo(spawn);
     } else {
-      if (spawn.renewCreep != null) {
+      if ((spawn.renewCreep != null) && Config.RewnewCreeps) {
         return spawn.renewCreep(this.creep);
       }
     }
@@ -57,6 +47,14 @@ Agent = (function() {
 
   Agent.prototype.fullEnergy = function() {
     return this.creep.carry.energy >= this.creep.carryCapacity;
+  };
+
+  Agent.prototype.needsEnergy = function() {
+    return false;
+  };
+
+  Agent.prototype.hasEnergy = function() {
+    return false;
   };
 
   return Agent;
