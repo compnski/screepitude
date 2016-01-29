@@ -10,7 +10,7 @@ MegaMiner = (function(superClass) {
   MegaMiner.bodyParts = function(room) {
     var i, spawnSpace, workParts;
     spawnSpace = room.spawnEnergyCapacity();
-    workParts = Math.floor((spawnSpace - 100) / 100);
+    workParts = Math.min(Math.floor((spawnSpace - 100) / 100), 5);
     return [MOVE, CARRY].concat((function() {
       var j, ref, results;
       results = [];

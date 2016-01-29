@@ -17,11 +17,16 @@ Deliverator = (function(superClass) {
     (base = this.creep.memory).state || (base.state = 'fill');
   }
 
-  Deliverator.prototype.fillFrom = function(target) {
-    var harvestFunc;
+  Deliverator.prototype.fill = function() {
+    var err, harvestFunc, ref, ref1, target;
+    delete this.creep.memory.sourceTarget;
+    target = this.creep.memory.sourceTarget;
+    target || (target = this.sourceFn());
+    this.creep.memory.sourceTarget = target;
     if (target == null) {
       return false;
     }
+    console.log(this.creep.name + " will fill from " + (target.name || target.structureType || target.id || target.constructor));
     harvestFunc = (function() {
       switch (false) {
         case target.structureType !== STRUCTURE_SPAWN:
@@ -44,22 +49,31 @@ Deliverator = (function(superClass) {
           })(this);
       }
     }).call(this);
-    if (harvestFunc() === ERR_NOT_IN_RANGE) {
+    if ((err = harvestFunc()) === ERR_NOT_IN_RANGE) {
       this.creep.moveTo(target);
-    } else if (target.structureType === STRUCTURE_SPAWN) {
+    } else if (target.renewCreep != null) {
       if (this.creep.ticksToLive < parseInt(Config.CreepRenewEnergy)) {
         target.renewCreep(this.creep);
       }
     }
+    if (err < 0 && err !== ERR_NOT_IN_RANGE) {
+      delete this.creep.memory.sourceTarget;
+    }
+    if (((ref = this.creep.memory.sourceTarget) != null ? ref.energy : void 0) === ((ref1 = this.creep.memory.sourceTarget) != null ? ref1.energyCapacity : void 0)) {
+      delete this.creep.memory.sourceTarget;
+    }
     return true;
   };
 
-  Deliverator.prototype.deliverTo = function(target) {
-    var deliverFunc;
+  Deliverator.prototype.deliver = function() {
+    var deliverFunc, err, target;
+    target = this.creep.memory.deliverTarget;
+    target || (target = this.targetFn());
+    this.creep.memory.deliverTarget = target;
     if (target == null) {
       return false;
     }
-    console.log("Deliver to " + (target.name || target.structureType || target.constructor));
+    console.log(this.creep.name + " will deliver to " + (target.name || target.structureType || target.constructor));
     deliverFunc = (function() {
       switch (false) {
         case target.structureType !== STRUCTURE_CONTROLLER:
@@ -88,12 +102,15 @@ Deliverator = (function(superClass) {
           })(this);
       }
     }).call(this);
-    if ((this.creep.memory.last_err = deliverFunc()) === ERR_NOT_IN_RANGE) {
+    if ((err = this.creep.memory.last_err = deliverFunc()) === ERR_NOT_IN_RANGE) {
       this.creep.moveTo(target);
-    } else if (target.structureType === STRUCTURE_SPAWN) {
+    } else if (target.renewCreep != null) {
       if (this.creep.ticksToLive < parseInt(Config.CreepRenewEnergy)) {
         target.renewCreep(this.creep);
       }
+    }
+    if (err < 0 && err !== ERR_NOT_IN_RANGE) {
+      delete this.creep.memory.deliverTarget;
     }
     return true;
   };
@@ -102,10 +119,10 @@ Deliverator = (function(superClass) {
     var ret;
     switch (this.creep.memory.state) {
       case 'fill':
-        ret = this.fillFrom(this.sourceFn());
+        ret = this.fill();
         break;
       case 'deliver':
-        ret = this.deliverTo(this.targetFn());
+        ret = this.deliver();
     }
     switch (false) {
       case !this.fullEnergy():
