@@ -1,22 +1,40 @@
-var PathUtils;
+var Agent, Guard, PathUtils,
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
+
+Agent = require('agent');
 
 PathUtils = require('path_utils');
 
-module.exports = function(creep) {
-  var chooseTarget, err, target;
-  chooseTarget = function() {
+Guard = (function(superClass) {
+  extend(Guard, superClass);
+
+  function Guard() {
+    return Guard.__super__.constructor.apply(this, arguments);
+  }
+
+  Guard.prototype.chooseTarget = function() {
     var targets;
-    targets = new PathUtils(creep).sortByDistance(creep.room.find(FIND_HOSTILE_CREEPS));
+    targets = new PathUtils(this.creep).sortByDistance(this.creep.room.find(FIND_HOSTILE_CREEPS));
     return targets[0];
   };
-  target = chooseTarget(creep);
-  if (target == null) {
-    creep.moveTo(Game.flags.Flag1);
-    return;
-  }
-  if ((err = creep.attack(target)) === ERR_NOT_IN_RANGE) {
-    return creep.moveTo(target);
-  }
-};
+
+  Guard.prototype.loop = function() {
+    var err, target;
+    target = this.chooseTarget();
+    if (target == null) {
+      this.creep.moveTo(Game.flags.Flag1);
+      return;
+    }
+    if ((err = this.creep.attack(target)) === ERR_NOT_IN_RANGE) {
+      return this.creep.moveTo(target);
+    }
+  };
+
+  return Guard;
+
+})(Agent);
+
+module.exports = Guard;
 
 //# sourceMappingURL=guard.js.map

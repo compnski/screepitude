@@ -46,7 +46,7 @@ catch e
 for name, creep of Game.creeps
   try
     switch creep.memory.role.split(":")[0]
-      when 'guard' then Guard(creep).loop()
+      when 'guard' then new Guard(creep).loop()
       when 'mega_miner' then new MegaMiner(creep, mines[0].source).loop()
       when 'mega_miner2' then new MegaMiner(creep, mines[1].source).loop()
       when 'upgrader' then new Upgrader(creep).loop() unless Config.NoUpgrades
