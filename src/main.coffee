@@ -15,15 +15,17 @@ Array.prototype.sum = ->
 
 primarySpawn = Game.spawns.Spawn1
 primaryRoom = primarySpawn.room
+primaryTower = primaryRoom.find(FIND_MY_STRUCTURES).filter((s)->s.structureType == 'tower')[0]
 
 targetCounts = 
   source1:2
+  tower_filler: 1
   transporter:5
   source2: 4
   mega_miner: 3
   mega_miner2: 0
-  repair: 4
-  builder: 2
+  repair: 3
+  builder: 1
   upgrader: 3
   guard: 3
 
@@ -31,6 +33,13 @@ try
   if primaryRoom.find(FIND_HOSTILE_CREEPS).length > 0
     targetCounts["guard"] = 10
     Game.notify("Active BattleMode!! #{primaryRoom.find(FIND_HOSTILE_CREEPS).length} hostile creeps in base!!")
+    try 
+      nearestTarget = new PathUtils(primaryTower).sortByDistance(primaryRoom.find(FIND_HOSTILE_CREEPS))
+      primaryTower.attack(nearestTarget) if nearestTarget?
+    catch e
+      console.log("Failed to use tower!!!")
+      Game.notify("Failed to use tower!!!",20)
+
 
   cell = new Cell(primaryRoom, targetCounts)
   cell.loop()
@@ -48,6 +57,7 @@ for name, creep of Game.creeps
   try
     switch creep.memory.role.split(":")[0]
       when 'guard' then new Guard(creep).loop()
+      when 'tower_filler' then new Deliverator(creep, (-> primarySpawn), (-> primaryTower )).loop()
       when 'mega_miner' then new MegaMiner(creep, mines[0].source).loop()
       when 'mega_miner2' then new MegaMiner(creep, mines[1].source).loop()
       when 'upgrader' then new Upgrader(creep).loop() unless Config.NoUpgrades
