@@ -59,7 +59,7 @@ for name, creep of Game.creeps
       when 'repair'
         ((new Deliverator(creep, 
           (-> primarySpawn), 
-          (-> primaryRoom.find(FIND_STRUCTURES).filter((s)->s.hits < s.hitsMax )[0])).loop() unless Config.NoRepairs  ) || 
+          (-> (new PathUtils(creep)).sortByDistance(primaryRoom.find(FIND_STRUCTURES).filter((s)->s.hits < s.hitsMax ))[0])).loop() unless Config.NoRepairs  ) || 
          (new Builder(creep).loop() unless Config.NoBuilders))
   catch e
     throw e if Config.ThrowExceptions
