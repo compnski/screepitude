@@ -20,13 +20,11 @@ class Deliverator extends Agent
       when target.constructor == Source
         => @creep.harvest(target)
 
-    if (err = harvestFunc()) == ERR_NOT_IN_RANGE
+    if (err = @creep.memory.lastErr = harvestFunc()) == ERR_NOT_IN_RANGE
       @creep.moveTo(target)
     else if target.renewCreep?
       target.renewCreep(@creep) if @creep.ticksToLive < parseInt(Config.CreepRenewEnergy)
     if err < 0 && err != ERR_NOT_IN_RANGE
-      delete @creep.memory.sourceTarget
-    if @creep.memory.sourceTarget?.energy == @creep.memory.sourceTarget?.energyCapacity
       delete @creep.memory.sourceTarget
     true
 
@@ -46,12 +44,15 @@ class Deliverator extends Agent
       else
          => @creep.transfer(target, RESOURCE_ENERGY)
 
-    if (err = @creep.memory.last_err = deliverFunc()) == ERR_NOT_IN_RANGE
+    if (err = @creep.memory.lastErr = deliverFunc()) == ERR_NOT_IN_RANGE
       @creep.moveTo(target)
     else if target.renewCreep?
       target.renewCreep(@creep) if @creep.ticksToLive < parseInt(Config.CreepRenewEnergy)
     if err < 0 && err != ERR_NOT_IN_RANGE
       delete @creep.memory.deliverTarget
+    if @creep.memory.sourceTarget?.energy == @creep.memory.sourceTarget?.energyCapacity
+      delete @creep.memory.sourceTarget
+
     true
 
   loop: ->

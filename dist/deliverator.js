@@ -18,7 +18,7 @@ Deliverator = (function(superClass) {
   }
 
   Deliverator.prototype.fill = function() {
-    var err, harvestFunc, ref, ref1, target;
+    var err, harvestFunc, target;
     delete this.creep.memory.sourceTarget;
     target = this.creep.memory.sourceTarget;
     target || (target = this.sourceFn());
@@ -49,7 +49,7 @@ Deliverator = (function(superClass) {
           })(this);
       }
     }).call(this);
-    if ((err = harvestFunc()) === ERR_NOT_IN_RANGE) {
+    if ((err = this.creep.memory.lastErr = harvestFunc()) === ERR_NOT_IN_RANGE) {
       this.creep.moveTo(target);
     } else if (target.renewCreep != null) {
       if (this.creep.ticksToLive < parseInt(Config.CreepRenewEnergy)) {
@@ -59,14 +59,11 @@ Deliverator = (function(superClass) {
     if (err < 0 && err !== ERR_NOT_IN_RANGE) {
       delete this.creep.memory.sourceTarget;
     }
-    if (((ref = this.creep.memory.sourceTarget) != null ? ref.energy : void 0) === ((ref1 = this.creep.memory.sourceTarget) != null ? ref1.energyCapacity : void 0)) {
-      delete this.creep.memory.sourceTarget;
-    }
     return true;
   };
 
   Deliverator.prototype.deliver = function() {
-    var deliverFunc, err, target;
+    var deliverFunc, err, ref, ref1, target;
     target = this.creep.memory.deliverTarget;
     target || (target = this.targetFn());
     this.creep.memory.deliverTarget = target;
@@ -102,7 +99,7 @@ Deliverator = (function(superClass) {
           })(this);
       }
     }).call(this);
-    if ((err = this.creep.memory.last_err = deliverFunc()) === ERR_NOT_IN_RANGE) {
+    if ((err = this.creep.memory.lastErr = deliverFunc()) === ERR_NOT_IN_RANGE) {
       this.creep.moveTo(target);
     } else if (target.renewCreep != null) {
       if (this.creep.ticksToLive < parseInt(Config.CreepRenewEnergy)) {
@@ -111,6 +108,9 @@ Deliverator = (function(superClass) {
     }
     if (err < 0 && err !== ERR_NOT_IN_RANGE) {
       delete this.creep.memory.deliverTarget;
+    }
+    if (((ref = this.creep.memory.sourceTarget) != null ? ref.energy : void 0) === ((ref1 = this.creep.memory.sourceTarget) != null ? ref1.energyCapacity : void 0)) {
+      delete this.creep.memory.sourceTarget;
     }
     return true;
   };
