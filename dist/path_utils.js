@@ -4,6 +4,8 @@ var PathUtils,
 PathUtils = (function() {
   function PathUtils(creep) {
     this.creep = creep;
+    this.nearestEnergyProvider = bind(this.nearestEnergyProvider, this);
+    this.nearestEnergyNeed = bind(this.nearestEnergyNeed, this);
     this.distanceComparator = bind(this.distanceComparator, this);
     this.pos = this.creep.pos;
   }
@@ -26,12 +28,16 @@ PathUtils = (function() {
     return a.distance - b.distance;
   };
 
-  PathUtils.prototype.nearestEnergyNeed = function() {
+  PathUtils.prototype.nearestEnergyNeed = function(room) {
     var targets;
-    targets = this.creep.room.find(FIND_MY_STRUCTURES).filter(function(c) {
+    if (room == null) {
+      room = null;
+    }
+    room || (room = this.creep.room);
+    targets = room.find(FIND_MY_STRUCTURES).filter(function(c) {
       return (c.structureType === 'extension' || c.structureType === 'spawn') && c.energy < c.energyCapacity;
     });
-    targets.concat(this.creep.room.find(FIND_MY_CREEPS).filter(function(c) {
+    targets = targets.concat(room.find(FIND_MY_CREEPS).filter(function(c) {
       return c.memory.energyRequester && c.carry.energy < c.carryCapacity;
     }));
     this.sortByDistance(targets);
@@ -40,10 +46,14 @@ PathUtils = (function() {
     }
   };
 
-  PathUtils.prototype.nearestEnergyProvider = function() {
+  PathUtils.prototype.nearestEnergyProvider = function(room) {
     var targets;
-    targets = this.creep.room.find(FIND_MY_CREEPS).filter(function(c) {
-      return c.memory.energyProvider && c.carry.energy > 10;
+    if (room == null) {
+      room = null;
+    }
+    room || (room = this.creep.room);
+    targets = room.find(FIND_MY_CREEPS).filter(function(c) {
+      return c.memory.energyProvider && c.carry.energy > 20;
     });
     this.sortByDistance(targets);
     if (targets.length !== 0) {

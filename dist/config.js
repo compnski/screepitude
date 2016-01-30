@@ -3,7 +3,7 @@ module.exports = {
   NoUpgrades: false,
   NoRepairs: false,
   NoBuilders: false,
-  ThrowExceptions: false
+  ThrowExceptions: true
 };
 
 //# sourceMappingURL=config.js.map

@@ -6,14 +6,14 @@ class MegaMiner extends Agent
     spawnSpace = room.spawnEnergyCapacity()
     # TODO: Put a better max on workParts
     workParts = Math.min(Math.floor((spawnSpace - 100)/100),3) # move + carry
-    [MOVE, CARRY].concat(WORK for i in [1..workParts])
+    [MOVE, CARRY, CARRY].concat(WORK for i in [1..workParts])
   constructor: (creep, targetSource=nil) ->
     super(creep)
     creep.memory.energyProvider = true
     if targetSource?
       @targetSource = creep.memory.targetSource = targetSource
   loop: ->
-    if @creep.pos.isNearTo(@creep.pos.findClosestByRange(FIND_DROPPED_ENERGY).pos)
+    if @creep.pos.isNearTo(@creep.pos.findClosestByRange(FIND_DROPPED_ENERGY)?.pos)
       if @creep.pickup(@creep.pos.findClosestByRange(FIND_DROPPED_ENERGY)) == 0
         return
     switch @creep.harvest(@targetSource)

@@ -22,6 +22,8 @@ class Cell
         [WORK, WORK, WORK, CARRY, MOVE]
       when "transporter"
         [CARRY, CARRY, CARRY, MOVE, MOVE, MOVE]
+      when "room2_transporter"
+        [CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE]
       when "guard"
         [TOUGH, TOUGH, TOUGH, TOUGH, MOVE, MOVE, ATTACK, ATTACK]
       when "hunter_killer"
@@ -32,7 +34,7 @@ class Cell
         [WORK, WORK, CARRY, MOVE, MOVE]
       when "builder"
         [WORK, WORK, WORK, CARRY, CARRY, MOVE]
-      when "mega_miner", "mega_miner2"
+      when "mega_miner", "mega_miner2", "room2_mega_miner", "room2_mega_miner2"
         MegaMiner.bodyParts(@)
       else
         [WORK, CARRY, MOVE]

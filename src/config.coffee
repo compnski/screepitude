@@ -3,4 +3,4 @@ module.exports =
 	NoUpgrades: false
 	NoRepairs: false
 	NoBuilders: false
-	ThrowExceptions: false
+	ThrowExceptions: true

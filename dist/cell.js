@@ -56,6 +56,8 @@ Cell = (function() {
         return [WORK, WORK, WORK, CARRY, MOVE];
       case "transporter":
         return [CARRY, CARRY, CARRY, MOVE, MOVE, MOVE];
+      case "room2_transporter":
+        return [CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE];
       case "guard":
         return [TOUGH, TOUGH, TOUGH, TOUGH, MOVE, MOVE, ATTACK, ATTACK];
       case "hunter_killer":
@@ -68,6 +70,8 @@ Cell = (function() {
         return [WORK, WORK, WORK, CARRY, CARRY, MOVE];
       case "mega_miner":
       case "mega_miner2":
+      case "room2_mega_miner":
+      case "room2_mega_miner2":
         return MegaMiner.bodyParts(this);
       default:
         return [WORK, CARRY, MOVE];
@@ -95,14 +99,19 @@ Cell = (function() {
   };
 
   Cell.prototype.loop = function() {
-    var creep, creepCount, i, len, name1, ref, ref1, results, role, spawn, targetCount;
+    var _, creep, creepCount, name1, ref, ref1, results, role, spawn, targetCount;
     creepCount = {};
-    ref = this.room.find(FIND_MY_CREEPS);
-    for (i = 0, len = ref.length; i < len; i++) {
-      creep = ref[i];
+    ref = Game.creeps;
+    for (_ in ref) {
+      creep = ref[_];
+      if (creep.ticksToLive < 100) {
+        continue;
+      }
       creepCount[name1 = creep.memory.role] || (creepCount[name1] = 0);
       creepCount[creep.memory.role]++;
     }
+    console.log("\n");
+    console.log(JSON.stringify(creepCount));
     spawn = this.room.find(FIND_MY_SPAWNS)[0];
     if (!spawn.spawning) {
       ref1 = this.targetCounts;

@@ -11,7 +11,7 @@ MegaMiner = (function(superClass) {
     var i, spawnSpace, workParts;
     spawnSpace = room.spawnEnergyCapacity();
     workParts = Math.min(Math.floor((spawnSpace - 100) / 100), 3);
-    return [MOVE, CARRY].concat((function() {
+    return [MOVE, CARRY, CARRY].concat((function() {
       var j, ref, results;
       results = [];
       for (i = j = 1, ref = workParts; 1 <= ref ? j <= ref : j >= ref; i = 1 <= ref ? ++j : --j) {
@@ -33,7 +33,8 @@ MegaMiner = (function(superClass) {
   }
 
   MegaMiner.prototype.loop = function() {
-    if (this.creep.pos.isNearTo(this.creep.pos.findClosestByRange(FIND_DROPPED_ENERGY).pos)) {
+    var ref;
+    if (this.creep.pos.isNearTo((ref = this.creep.pos.findClosestByRange(FIND_DROPPED_ENERGY)) != null ? ref.pos : void 0)) {
       if (this.creep.pickup(this.creep.pos.findClosestByRange(FIND_DROPPED_ENERGY)) === 0) {
         return;
       }
