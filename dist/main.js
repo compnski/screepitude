@@ -44,10 +44,10 @@ primaryTower = primaryRoom.find(FIND_MY_STRUCTURES).filter(function(s) {
 })[0];
 
 targetCounts = {
-  source1: 0,
+  source1: 2,
+  source2: 2,
   tower_filler: 1,
   transporter: 6,
-  source2: 0,
   mega_miner: 2,
   room2_mega_miner: 1,
   room2_mega_miner2: 1,
@@ -75,7 +75,7 @@ try {
     targetCounts["guard"] = 10;
     Game.notify("Active BattleMode!! " + (primaryRoom.find(FIND_HOSTILE_CREEPS).length) + " hostile creeps in base!!");
     try {
-      if (Game.flags.HuntersMark.room.name !== primaryRoom.name) {
+      if (Game.flags.HuntersMark.pos.roomName !== primaryRoom.pos.roomName) {
         Game.flags.HuntersMark.setPosition(primarySpawn.pos);
       }
     } catch (_error) {
@@ -95,7 +95,7 @@ try {
     }
   } else {
     try {
-      if (Game.flags.HuntersMark.room.name !== room2.name) {
+      if (Game.flags.HuntersMark.pos.roomName !== Game.flags.Room2.pos.roomName) {
         Game.flags.HuntersMark.setPosition(Game.flags.Room2.pos);
       }
     } catch (_error) {
@@ -116,7 +116,9 @@ try {
   cell.loop();
   harvestOnly = cell.spawnFailed;
   mines = Mine.allInRoom(primaryRoom);
-  room2mines = Mine.allInRoom(room2);
+  if (room2) {
+    room2mines = Mine.allInRoom(room2);
+  }
 } catch (_error) {
   e = _error;
   if (Config.ThrowExceptions) {
@@ -166,10 +168,14 @@ for (name in ref) {
         new MegaMiner(creep, mines[1].source).loop();
         break;
       case 'room2_mega_miner':
-        new MegaMiner(creep, room2mines[0].source).loop();
+        if (room2 != null) {
+          new MegaMiner(creep, room2mines[0].source).loop();
+        }
         break;
       case 'room2_mega_miner2':
-        new MegaMiner(creep, room2mines[1].source).loop();
+        if (room2 != null) {
+          new MegaMiner(creep, room2mines[1].source).loop();
+        }
         break;
       case 'upgrader':
         if (!Config.NoUpgrades) {
@@ -204,7 +210,7 @@ for (name in ref) {
         break;
       case 'source1':
         new Deliverator(creep, (function() {
-          return (new PathUtils(creep)).nearestEnergyProvider();
+          return primaryRoom.find(FIND_SOURCES)[0];
         }), (function() {
           return (new PathUtils(creep)).nearestEnergyNeed();
         })).loop();

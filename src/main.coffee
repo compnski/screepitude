@@ -22,10 +22,10 @@ room2 = Game.flags.Room2.room
 primaryTower = primaryRoom.find(FIND_MY_STRUCTURES).filter((s)->s.structureType == 'tower')[0]
 
 targetCounts = 
-  source1:0
+  source1:2
+  source2: 2
   tower_filler: 1
   transporter:6
-  source2: 0
   mega_miner: 2
   room2_mega_miner: 1
   room2_mega_miner2: 1
@@ -45,7 +45,7 @@ try
     targetCounts["guard"] = 10
     Game.notify("Active BattleMode!! #{primaryRoom.find(FIND_HOSTILE_CREEPS).length} hostile creeps in base!!")
     try
-      if Game.flags.HuntersMark.room.name != primaryRoom.name
+      if Game.flags.HuntersMark.pos.roomName != primaryRoom.pos.roomName
         Game.flags.HuntersMark.setPosition(primarySpawn.pos)
     catch e
       throw e
@@ -60,7 +60,7 @@ try
   else
     # PEACE
     try
-      if Game.flags.HuntersMark.room.name != room2.name
+      if Game.flags.HuntersMark.pos.roomName != Game.flags.Room2.pos.roomName
         Game.flags.HuntersMark.setPosition(Game.flags.Room2.pos)
     catch e
       throw e
@@ -76,7 +76,7 @@ try
 
 
   mines = Mine.allInRoom(primaryRoom)
-  room2mines = Mine.allInRoom(room2)
+  room2mines = Mine.allInRoom(room2) if room2
   #for mine in mines
   #  console.log('source', mine.source.id, 'has', mine.capacity(), 'slots for mining')
   #for mine in room2mines
@@ -100,15 +100,15 @@ for name, creep of Game.creeps
       when 'upgrader_filler' then new Deliverator(creep, (-> primarySpawn), ( upgraders )).loop()
       when 'mega_miner' then new MegaMiner(creep, mines[0].source).loop()
       when 'mega_miner2' then new MegaMiner(creep, mines[1].source).loop()
-      when 'room2_mega_miner' then new MegaMiner(creep, room2mines[0].source).loop()
-      when 'room2_mega_miner2' then new MegaMiner(creep, room2mines[1].source).loop()
+      when 'room2_mega_miner' then new MegaMiner(creep, room2mines[0].source).loop() if room2?
+      when 'room2_mega_miner2' then new MegaMiner(creep, room2mines[1].source).loop() if room2?
       when 'upgrader' then new Upgrader(creep).loop() unless Config.NoUpgrades
       when 'builder' then new Builder(creep).loop() unless Config.NoBuilders
       when 'source2' then new Deliverator(creep, (-> primaryRoom.find(FIND_SOURCES)[1]), (-> (new PathUtils(creep)).nearestEnergyNeed() )).loop()
       when 'transporter' then new Deliverator(creep, (-> (new PathUtils(creep)).nearestEnergyProvider()), (-> (new PathUtils(creep)).nearestEnergyNeed() )).loop()
       when 'room2_transporter' then new Deliverator(creep, (-> (new PathUtils(creep)).nearestEnergyProvider(room2)), (-> (new PathUtils(creep)).nearestEnergyNeed(primaryRoom) )).loop()
-      when 'source1' then new Deliverator(creep, (-> (new PathUtils(creep)).nearestEnergyProvider()), (-> (new PathUtils(creep)).nearestEnergyNeed() )).loop()
-#      when 'source1' then new Deliverator(creep, (-> primaryRoom.find(FIND_SOURCES)[0]), (-> (new PathUtils(creep)).nearestEnergyNeed() )).loop()
+#      when 'source1' then new Deliverator(creep, (-> (new PathUtils(creep)).nearestEnergyProvider()), (-> (new PathUtils(creep)).nearestEnergyNeed() )).loop()
+      when 'source1' then new Deliverator(creep, (-> primaryRoom.find(FIND_SOURCES)[0]), (-> (new PathUtils(creep)).nearestEnergyNeed() )).loop()
       when 'repair'
         ((new Deliverator(creep, 
           (-> primarySpawn), 
