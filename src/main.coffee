@@ -24,17 +24,17 @@ primaryTower = primaryRoom.find(FIND_MY_STRUCTURES).filter((s)->s.structureType 
 targetCounts = 
   source1:0
   tower_filler: 1
-  transporter:7
+  transporter:6
   source2: 0
   mega_miner: 2
   room2_mega_miner: 1
   room2_mega_miner2: 1
-  room2_transporter: 5
+  room2_transporter: 8
   mega_miner2: 2
   repair: 2
   builder: 1
   upgrader: 3
-  upgrader_filler: 1
+  upgrader_filler: 2
   guard: 3
   healbot: 2
   hunter_killer:2
@@ -76,19 +76,18 @@ try
 
 
   mines = Mine.allInRoom(primaryRoom)
-  for mine in mines
-    console.log('source', mine.source.id, 'has', mine.capacity(), 'slots for mining')
-
   room2mines = Mine.allInRoom(room2)
-  for mine in room2mines
-    console.log('source', mine.source.id, 'has', mine.capacity(), 'slots for mining')
+  #for mine in mines
+  #  console.log('source', mine.source.id, 'has', mine.capacity(), 'slots for mining')
+  #for mine in room2mines
+  #  console.log('source', mine.source.id, 'has', mine.capacity(), 'slots for mining')
 
 catch e
   throw e if Config.ThrowExceptions
   console.log("Caught exception! #{e}")
 
 upgraders = ->
-  u = primaryRoom.find(FIND_MY_CREEPS).filter((c)->c.role == 'upgrader')
+  u = primaryRoom.find(FIND_MY_CREEPS).filter((c)->c.memory.role == 'upgrader')
   u[parseInt(Math.random()*u.length)]
 
 for name, creep of Game.creeps

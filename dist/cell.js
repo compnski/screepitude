@@ -53,7 +53,7 @@ Cell = (function() {
       case "harvester":
         return [WORK, CARRY, MOVE];
       case "upgrader":
-        return [WORK, WORK, WORK, CARRY, MOVE];
+        return [WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE];
       case "transporter":
         return [CARRY, CARRY, CARRY, MOVE, MOVE, MOVE];
       case "room2_transporter":
@@ -67,12 +67,14 @@ Cell = (function() {
       case "repair":
         return [WORK, WORK, CARRY, MOVE, MOVE];
       case "builder":
-        return [WORK, WORK, WORK, CARRY, CARRY, MOVE];
+        return [WORK, WORK, WORK, CARRY, CARRY, MOVE, MOVE];
       case "mega_miner":
       case "mega_miner2":
       case "room2_mega_miner":
       case "room2_mega_miner2":
         return MegaMiner.bodyParts(this);
+      case 'upgrade_filler':
+        return [CARRY, CARRY, MOVE, MOVE];
       default:
         return [WORK, CARRY, MOVE];
     }

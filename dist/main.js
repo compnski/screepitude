@@ -1,4 +1,4 @@
-var Agent, Builder, Cell, Config, Deliverator, Guard, Healbot, HunterKiller, MegaMiner, Mine, PathUtils, Upgrader, a, cell, creep, e, harvestOnly, i, j, len, len1, mine, mines, name, nearestTarget, primaryRoom, primarySpawn, primaryTower, ref, room2, room2mines, targetCounts, upgraders;
+var Agent, Builder, Cell, Config, Deliverator, Guard, Healbot, HunterKiller, MegaMiner, Mine, PathUtils, Upgrader, a, cell, creep, e, harvestOnly, mines, name, nearestTarget, primaryRoom, primarySpawn, primaryTower, ref, room2, room2mines, targetCounts, upgraders;
 
 Agent = require('agent');
 
@@ -46,17 +46,17 @@ primaryTower = primaryRoom.find(FIND_MY_STRUCTURES).filter(function(s) {
 targetCounts = {
   source1: 0,
   tower_filler: 1,
-  transporter: 7,
+  transporter: 6,
   source2: 0,
   mega_miner: 2,
   room2_mega_miner: 1,
   room2_mega_miner2: 1,
-  room2_transporter: 5,
+  room2_transporter: 8,
   mega_miner2: 2,
   repair: 2,
   builder: 1,
   upgrader: 3,
-  upgrader_filler: 1,
+  upgrader_filler: 2,
   guard: 3,
   healbot: 2,
   hunter_killer: 2
@@ -116,15 +116,7 @@ try {
   cell.loop();
   harvestOnly = cell.spawnFailed;
   mines = Mine.allInRoom(primaryRoom);
-  for (i = 0, len = mines.length; i < len; i++) {
-    mine = mines[i];
-    console.log('source', mine.source.id, 'has', mine.capacity(), 'slots for mining');
-  }
   room2mines = Mine.allInRoom(room2);
-  for (j = 0, len1 = room2mines.length; j < len1; j++) {
-    mine = room2mines[j];
-    console.log('source', mine.source.id, 'has', mine.capacity(), 'slots for mining');
-  }
 } catch (_error) {
   e = _error;
   if (Config.ThrowExceptions) {
@@ -136,7 +128,7 @@ try {
 upgraders = function() {
   var u;
   u = primaryRoom.find(FIND_MY_CREEPS).filter(function(c) {
-    return c.role === 'upgrader';
+    return c.memory.role === 'upgrader';
   });
   return u[parseInt(Math.random() * u.length)];
 };

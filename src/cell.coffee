@@ -19,7 +19,7 @@ class Cell
       when "harvester"
         [WORK, CARRY, MOVE]
       when "upgrader"
-        [WORK, WORK, WORK, CARRY, MOVE]
+        [WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE]
       when "transporter"
         [CARRY, CARRY, CARRY, MOVE, MOVE, MOVE]
       when "room2_transporter"
@@ -33,9 +33,11 @@ class Cell
       when "repair"
         [WORK, WORK, CARRY, MOVE, MOVE]
       when "builder"
-        [WORK, WORK, WORK, CARRY, CARRY, MOVE]
+        [WORK, WORK, WORK, CARRY, CARRY, MOVE, MOVE]
       when "mega_miner", "mega_miner2", "room2_mega_miner", "room2_mega_miner2"
         MegaMiner.bodyParts(@)
+      when 'upgrade_filler'
+        [CARRY, CARRY, MOVE, MOVE]
       else
         [WORK, CARRY, MOVE]
             
