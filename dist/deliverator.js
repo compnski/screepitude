@@ -49,7 +49,9 @@ Deliverator = (function(superClass) {
       }
     }).call(this);
     if ((err = this.creep.memory.lastErr = harvestFunc()) === ERR_NOT_IN_RANGE) {
-      this.creep.moveTo(target);
+      if (this.creep.moveTo(target) === ERR_NO_PATH) {
+        this.creep.memory.failCount++;
+      }
     } else if (target.renewCreep != null) {
       if (this.creep.ticksToLive < parseInt(Config.CreepRenewEnergy)) {
         target.renewCreep(this.creep);
@@ -60,6 +62,10 @@ Deliverator = (function(superClass) {
     }
     if ((target != null ? target.carryCapacity : void 0) > 0 && (target != null ? (ref1 = target.carry) != null ? ref1.energy : void 0 : void 0) < 20) {
       delete this.creep.memory.sourceTarget;
+    }
+    if (this.creep.memory.failCount > 5) {
+      delete this.creep.memory.sourceTarget;
+      this.creep.memory.failCount = 0;
     }
     return true;
   };
@@ -102,7 +108,9 @@ Deliverator = (function(superClass) {
       }
     }).call(this);
     if ((err = this.creep.memory.lastErr = deliverFunc()) === ERR_NOT_IN_RANGE) {
-      this.creep.moveTo(target);
+      if (this.creep.moveTo(target) === ERR_NO_PATH) {
+        this.creep.memory.failCount++;
+      }
     } else if (target.renewCreep != null) {
       if (this.creep.ticksToLive < parseInt(Config.CreepRenewEnergy)) {
         target.renewCreep(this.creep);
@@ -111,11 +119,15 @@ Deliverator = (function(superClass) {
     if (err < 0 && err !== ERR_NOT_IN_RANGE) {
       delete this.creep.memory.deliverTarget;
     }
-    if ((target != null ? target.energy : void 0) === (target != null ? target.energyCapacity : void 0)) {
+    if (target.energyCapacity > 0 && (target != null ? target.energy : void 0) === (target != null ? target.energyCapacity : void 0)) {
       delete this.creep.memory.deliverTarget;
     }
     if ((target != null ? target.carryCapacity : void 0) > 0 && (target != null ? (ref1 = target.carry) != null ? ref1.energy : void 0 : void 0) >= ((target != null ? target.carryCapacity : void 0) - 10)) {
       delete this.creep.memory.deliverTarget;
+    }
+    if (this.creep.memory.failCount > 5) {
+      delete this.creep.memory.deliverTarget;
+      this.creep.memory.failCount = 0;
     }
     return true;
   };
@@ -132,9 +144,11 @@ Deliverator = (function(superClass) {
     switch (false) {
       case !this.fullEnergy():
         this.setState('deliver');
+        this.creep.memory.failCount = 0;
         break;
       case this.creep.carry.energy !== 0:
         this.setState('fill');
+        this.creep.memory.failCount = 0;
     }
     return ret;
   };

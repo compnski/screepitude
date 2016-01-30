@@ -21,13 +21,17 @@ class Deliverator extends Agent
         => @creep.harvest(target)
 
     if (err = @creep.memory.lastErr = harvestFunc()) == ERR_NOT_IN_RANGE
-      @creep.moveTo(target)
+      if @creep.moveTo(target) == ERR_NO_PATH
+        @creep.memory.failCount++
     else if target.renewCreep?
       target.renewCreep(@creep) if @creep.ticksToLive < parseInt(Config.CreepRenewEnergy)
     if err < 0 && err != ERR_NOT_IN_RANGE
       delete @creep.memory.sourceTarget
     if target?.carryCapacity > 0 && target?.carry?.energy < 20
       delete @creep.memory.sourceTarget
+    if @creep.memory.failCount > 5
+      delete @creep.memory.sourceTarget
+      @creep.memory.failCount = 0
     true
 
   deliver: ->
@@ -47,16 +51,20 @@ class Deliverator extends Agent
          => @creep.transfer(target, RESOURCE_ENERGY)
 
     if (err = @creep.memory.lastErr = deliverFunc()) == ERR_NOT_IN_RANGE
-      @creep.moveTo(target)
+      if @creep.moveTo(target) == ERR_NO_PATH
+        @creep.memory.failCount++
     else if target.renewCreep?
       target.renewCreep(@creep) if @creep.ticksToLive < parseInt(Config.CreepRenewEnergy)
     if err < 0 && err != ERR_NOT_IN_RANGE
       delete @creep.memory.deliverTarget
-    if target?.energy == target?.energyCapacity
+    if target.energyCapacity > 0 && target?.energy == target?.energyCapacity
       delete @creep.memory.deliverTarget
     if target?.carryCapacity > 0 && target?.carry?.energy >= (target?.carryCapacity - 10)
       delete @creep.memory.deliverTarget
       
+    if @creep.memory.failCount > 5
+      delete @creep.memory.deliverTarget
+      @creep.memory.failCount = 0
 
 
     true
@@ -68,8 +76,10 @@ class Deliverator extends Agent
     switch
       when @fullEnergy()
         @setState('deliver')
+        @creep.memory.failCount = 0
       when @creep.carry.energy == 0
         @setState('fill')
+        @creep.memory.failCount = 0
     return ret
 
 module.exports = Deliverator
