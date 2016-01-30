@@ -1,6 +1,7 @@
 module.exports = 
-	CreepRenewEnergy: 100
-	NoUpgrades: false
-	NoRepairs: false
-	NoBuilders: false
-	ThrowExceptions: true
+  ThrowExceptions: true
+  CreepRenewEnergy: 100
+  NoUpgrades: false
+  NoRepairs: false
+  NoBuilders: false
+  MaxWallHP: 400000
