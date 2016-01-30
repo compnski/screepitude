@@ -15,7 +15,7 @@ PathUtils = (function() {
   };
 
   PathUtils.prototype.distance = function(target) {
-    return this.pos.getRangeTo(target);
+    return this.pos.getRangeTo(target) + Math.random() * 2;
   };
 
   PathUtils.prototype.distanceComparator = function(a, b) {
@@ -42,7 +42,7 @@ PathUtils = (function() {
     }));
     this.sortByDistance(targets);
     if (targets.length !== 0) {
-      return targets[0];
+      return targets[parseInt(Math.random() * Math.min(targets.length, 3))];
     }
   };
 
@@ -57,7 +57,7 @@ PathUtils = (function() {
     });
     this.sortByDistance(targets);
     if (targets.length !== 0) {
-      return targets[0];
+      return targets[parseInt(Math.random() * Math.min(targets.length, 3))];
     }
   };
 
