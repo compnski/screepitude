@@ -1,10 +1,21 @@
-var Agent, Config, Deliverator,
+var Agent, Config, Deliverator, shortName,
   extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
   hasProp = {}.hasOwnProperty;
 
 Agent = require('agent');
 
 Config = require('config');
+
+shortName = function(target) {
+  var parts;
+  parts = (target.name || target.structureType || target.id || "").split("_");
+  if (parts.length === 2) {
+    return parts[0][0] + "_" + parts[1];
+  }
+  return parts.map(function(s) {
+    return s.slice(0, 4);
+  });
+};
 
 Deliverator = (function(superClass) {
   extend(Deliverator, superClass);
@@ -20,7 +31,12 @@ Deliverator = (function(superClass) {
   Deliverator.prototype.fill = function() {
     var err, harvestFunc, ref, ref1, target;
     target = Game.getObjectById((ref = this.creep.memory.sourceTarget) != null ? ref.id : void 0);
-    target || (target = this.sourceFn());
+    if (!target) {
+      target = this.sourceFn();
+      if (target != null) {
+        this.creep.say("-> " + (target.name || target.structureType || target.id));
+      }
+    }
     this.creep.memory.sourceTarget = target;
     if (target == null) {
       return false;
@@ -73,7 +89,12 @@ Deliverator = (function(superClass) {
   Deliverator.prototype.deliver = function() {
     var deliverFunc, err, ref, ref1, target;
     target = Game.getObjectById((ref = this.creep.memory.deliverTarget) != null ? ref.id : void 0);
-    target || (target = this.targetFn());
+    if (!target) {
+      target || (target = this.targetFn());
+      if (target != null) {
+        this.creep.say("<- " + (shortName(target)));
+      }
+    }
     this.creep.memory.deliverTarget = target;
     if (target == null) {
       return false;
@@ -125,6 +146,10 @@ Deliverator = (function(superClass) {
     if ((target != null ? target.carryCapacity : void 0) > 0 && (target != null ? (ref1 = target.carry) != null ? ref1.energy : void 0 : void 0) >= ((target != null ? target.carryCapacity : void 0) - 10)) {
       delete this.creep.memory.deliverTarget;
     }
+    if (this.creep.pos.isEqualTo(this.creep.memory.lastPos)) {
+      this.creep.memory.failCount++;
+    }
+    this.creep.memory.lastPos = this.creep.pos;
     if (this.creep.memory.failCount > 5) {
       delete this.creep.memory.deliverTarget;
       this.creep.memory.failCount = 0;

@@ -1,5 +1,12 @@
 Agent = require('agent')
 Config = require('config')
+
+shortName = (target) ->
+  parts = (target.name || target.structureType || target.id || "").split("_")
+  if parts.length == 2
+    return parts[0][0] + "_" + parts[1]
+  parts.map((s)->s[0..3])
+
 class Deliverator extends Agent
   constructor: (creep, @sourceFn, @targetFn) ->
     super(creep)
@@ -8,7 +15,9 @@ class Deliverator extends Agent
     # Fill from target structure, renew if structure is a spawn
     #delete @creep.memory.sourceTarget
     target = Game.getObjectById(@creep.memory.sourceTarget?.id)
-    target ||= @sourceFn()
+    if !target
+      target = @sourceFn()
+      @creep.say("-> #{target.name || target.structureType || target.id}") if target?
     @creep.memory.sourceTarget = target
     return false unless target?
     console.log("#{@creep.name} will fill from #{target.name || target.structureType || target.id || target.constructor}")
@@ -36,7 +45,9 @@ class Deliverator extends Agent
 
   deliver: ->
     target = Game.getObjectById(@creep.memory.deliverTarget?.id)
-    target ||= @targetFn()
+    if !target
+      target ||= @targetFn()
+      @creep.say("<- #{shortName(target)}") if target?
     @creep.memory.deliverTarget = target
     return false unless target?
     console.log("#{@creep.name} will deliver to #{target.name || target.structureType || target.constructor}")
@@ -62,6 +73,10 @@ class Deliverator extends Agent
     if target?.carryCapacity > 0 && target?.carry?.energy >= (target?.carryCapacity - 10)
       delete @creep.memory.deliverTarget
       
+    if @creep.pos.isEqualTo(@creep.memory.lastPos)
+      @creep.memory.failCount++
+    @creep.memory.lastPos = @creep.pos
+
     if @creep.memory.failCount > 5
       delete @creep.memory.deliverTarget
       @creep.memory.failCount = 0
