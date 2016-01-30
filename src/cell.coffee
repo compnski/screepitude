@@ -53,9 +53,12 @@ class Cell
 
   loop: ->
     creepCount = {}
-    for creep in @room.find(FIND_MY_CREEPS)
+    for _, creep of Game.creeps
+      continue if creep.ticksToLive < 100
       creepCount[creep.memory.role] ||= 0
       creepCount[creep.memory.role]++ 
+    console.log("\n")
+    console.log(JSON.stringify(creepCount))
     spawn = @room.find(FIND_MY_SPAWNS)[0]
     if not spawn.spawning
       for role, targetCount of @targetCounts
