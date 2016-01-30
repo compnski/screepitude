@@ -24,6 +24,10 @@ class Cell
         [CARRY, CARRY, CARRY, MOVE, MOVE, MOVE]
       when "guard"
         [TOUGH, TOUGH, TOUGH, TOUGH, MOVE, MOVE, ATTACK, ATTACK]
+      when "hunter_killer"
+        [TOUGH, TOUGH, ATTACK, ATTACK, ATTACK, MOVE, MOVE, MOVE, MOVE]
+      when "healbot"
+        [TOUGH, TOUGH, TOUGH, HEAL, MOVE, MOVE, MOVE, MOVE]
       when "repair"
         [WORK, WORK, CARRY, MOVE, MOVE]
       when "builder"

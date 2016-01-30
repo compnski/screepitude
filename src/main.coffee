@@ -8,6 +8,9 @@ Guard = require('guard')
 MegaMiner = require('mega_miner')
 Config = require('config')
 PathUtils = require('path_utils')
+Healbot = require('healbot')
+HunterKiller = require('hunter_killer')
+
 
 Array.prototype.sum = ->
   return 0 unless @length
@@ -28,6 +31,8 @@ targetCounts =
   builder: 1
   upgrader: 3
   guard: 3
+  healbot: 2
+  hunter_killer:10
 
 try 
   if primaryRoom.find(FIND_HOSTILE_CREEPS).length > 0
@@ -56,6 +61,8 @@ catch e
 for name, creep of Game.creeps
   try
     switch creep.memory.role.split(":")[0]
+      when 'healbot' then new Healbot(creep).loop(Game.flags.HuntersMark)
+      when 'hunter_killer' then new HunterKiller(creep).loop(Game.flags.HuntersMark)
       when 'guard' then new Guard(creep).loop()
       when 'tower_filler' then new Deliverator(creep, (-> primarySpawn), (-> primaryTower )).loop()
       when 'mega_miner' then new MegaMiner(creep, mines[0].source).loop()

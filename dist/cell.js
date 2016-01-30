@@ -58,6 +58,10 @@ Cell = (function() {
         return [CARRY, CARRY, CARRY, MOVE, MOVE, MOVE];
       case "guard":
         return [TOUGH, TOUGH, TOUGH, TOUGH, MOVE, MOVE, ATTACK, ATTACK];
+      case "hunter_killer":
+        return [TOUGH, TOUGH, ATTACK, ATTACK, ATTACK, MOVE, MOVE, MOVE, MOVE];
+      case "healbot":
+        return [TOUGH, TOUGH, TOUGH, HEAL, MOVE, MOVE, MOVE, MOVE];
       case "repair":
         return [WORK, WORK, CARRY, MOVE, MOVE];
       case "builder":
