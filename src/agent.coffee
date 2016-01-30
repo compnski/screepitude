@@ -18,13 +18,13 @@ class Agent
     if @creep.harvest(source) == ERR_NOT_IN_RANGE
       @creep.moveTo(source)
 
-  primarySpawn: =>
+  primarySpawn: ->
     Game.spawns.Spawn1
 
   giveEnergyToSpawn: (spawn) ->
     if @creep.transfer(spawn, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE
       @creep.moveTo(spawn)
-    else 
+    else
       spawn.renewCreep(@creep) if spawn.renewCreep? and Config.RewnewCreeps
 
   fullEnergy: ->

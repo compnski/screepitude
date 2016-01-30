@@ -17,6 +17,7 @@ class PathUtils
   nearestEnergyNeed: ->
     # TODO: Units can request energy via flag
     targets = @creep.room.find(FIND_MY_STRUCTURES).filter((c) -> (c.structureType == 'extension' || c.structureType == 'spawn') && c.energy < c.energyCapacity)
+    targets.concat(@creep.room.find(FIND_MY_CREEPS).filter((c) -> c.memory.energyRequester && c.carry.energy < c.carryCapacity))
     @sortByDistance(targets)
     return targets[0] unless targets.length == 0
 

@@ -31,6 +31,9 @@ PathUtils = (function() {
     targets = this.creep.room.find(FIND_MY_STRUCTURES).filter(function(c) {
       return (c.structureType === 'extension' || c.structureType === 'spawn') && c.energy < c.energyCapacity;
     });
+    targets.concat(this.creep.room.find(FIND_MY_CREEPS).filter(function(c) {
+      return c.memory.energyRequester && c.carry.energy < c.carryCapacity;
+    }));
     this.sortByDistance(targets);
     if (targets.length !== 0) {
       return targets[0];

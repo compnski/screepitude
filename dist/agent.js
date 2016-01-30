@@ -1,5 +1,4 @@
-var Agent, Config, PathUtils,
-  bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+var Agent, Config, PathUtils;
 
 PathUtils = require('path_utils');
 
@@ -7,7 +6,6 @@ Config = require('config');
 
 Agent = (function() {
   function Agent(creep) {
-    this.primarySpawn = bind(this.primarySpawn, this);
     this.creep = creep;
   }
 
