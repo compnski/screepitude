@@ -6,8 +6,8 @@ class Deliverator extends Agent
     @creep.memory.state ||= 'fill'
   fill: ->
     # Fill from target structure, renew if structure is a spawn
-    delete @creep.memory.sourceTarget
-    target = @creep.memory.sourceTarget
+    #delete @creep.memory.sourceTarget
+    target = Game.getObjectById(@creep.memory.sourceTarget?.id)
     target ||= @sourceFn()
     @creep.memory.sourceTarget = target
     return false unless target?
@@ -15,8 +15,8 @@ class Deliverator extends Agent
     harvestFunc = switch
       when target.structureType == STRUCTURE_SPAWN
         => target.transferEnergy(@creep)
-      when target.transferEnergy?
-        => target.transferEnergy(@creep)
+      when target.transfer?
+        => target.transfer(@creep, RESOURCE_ENERGY)
       when target.constructor == Source
         => @creep.harvest(target)
 
@@ -26,10 +26,12 @@ class Deliverator extends Agent
       target.renewCreep(@creep) if @creep.ticksToLive < parseInt(Config.CreepRenewEnergy)
     if err < 0 && err != ERR_NOT_IN_RANGE
       delete @creep.memory.sourceTarget
+    if target?.carryCapacity > 0 && target?.carry?.energy < 20
+      delete @creep.memory.sourceTarget
     true
 
   deliver: ->
-    target = @creep.memory.deliverTarget
+    target = Game.getObjectById(@creep.memory.deliverTarget?.id)
     target ||= @targetFn()
     @creep.memory.deliverTarget = target
     return false unless target?
@@ -50,8 +52,12 @@ class Deliverator extends Agent
       target.renewCreep(@creep) if @creep.ticksToLive < parseInt(Config.CreepRenewEnergy)
     if err < 0 && err != ERR_NOT_IN_RANGE
       delete @creep.memory.deliverTarget
-    if @creep.memory.sourceTarget?.energy == @creep.memory.sourceTarget?.energyCapacity
-      delete @creep.memory.sourceTarget
+    if target?.energy == target?.energyCapacity
+      delete @creep.memory.deliverTarget
+    if target?.carryCapacity > 0 && target?.carry?.energy >= (target?.carryCapacity - 10)
+      delete @creep.memory.deliverTarget
+      
+
 
     true
 

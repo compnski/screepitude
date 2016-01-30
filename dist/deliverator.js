@@ -18,9 +18,8 @@ Deliverator = (function(superClass) {
   }
 
   Deliverator.prototype.fill = function() {
-    var err, harvestFunc, target;
-    delete this.creep.memory.sourceTarget;
-    target = this.creep.memory.sourceTarget;
+    var err, harvestFunc, ref, ref1, target;
+    target = Game.getObjectById((ref = this.creep.memory.sourceTarget) != null ? ref.id : void 0);
     target || (target = this.sourceFn());
     this.creep.memory.sourceTarget = target;
     if (target == null) {
@@ -35,10 +34,10 @@ Deliverator = (function(superClass) {
               return target.transferEnergy(_this.creep);
             };
           })(this);
-        case target.transferEnergy == null:
+        case target.transfer == null:
           return (function(_this) {
             return function() {
-              return target.transferEnergy(_this.creep);
+              return target.transfer(_this.creep, RESOURCE_ENERGY);
             };
           })(this);
         case target.constructor !== Source:
@@ -59,12 +58,15 @@ Deliverator = (function(superClass) {
     if (err < 0 && err !== ERR_NOT_IN_RANGE) {
       delete this.creep.memory.sourceTarget;
     }
+    if ((target != null ? target.carryCapacity : void 0) > 0 && (target != null ? (ref1 = target.carry) != null ? ref1.energy : void 0 : void 0) < 20) {
+      delete this.creep.memory.sourceTarget;
+    }
     return true;
   };
 
   Deliverator.prototype.deliver = function() {
     var deliverFunc, err, ref, ref1, target;
-    target = this.creep.memory.deliverTarget;
+    target = Game.getObjectById((ref = this.creep.memory.deliverTarget) != null ? ref.id : void 0);
     target || (target = this.targetFn());
     this.creep.memory.deliverTarget = target;
     if (target == null) {
@@ -109,8 +111,11 @@ Deliverator = (function(superClass) {
     if (err < 0 && err !== ERR_NOT_IN_RANGE) {
       delete this.creep.memory.deliverTarget;
     }
-    if (((ref = this.creep.memory.sourceTarget) != null ? ref.energy : void 0) === ((ref1 = this.creep.memory.sourceTarget) != null ? ref1.energyCapacity : void 0)) {
-      delete this.creep.memory.sourceTarget;
+    if ((target != null ? target.energy : void 0) === (target != null ? target.energyCapacity : void 0)) {
+      delete this.creep.memory.deliverTarget;
+    }
+    if ((target != null ? target.carryCapacity : void 0) > 0 && (target != null ? (ref1 = target.carry) != null ? ref1.energy : void 0 : void 0) >= ((target != null ? target.carryCapacity : void 0) - 10)) {
+      delete this.creep.memory.deliverTarget;
     }
     return true;
   };
