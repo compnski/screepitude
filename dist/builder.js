@@ -12,8 +12,8 @@ Builder = (function(superClass) {
 
   function Builder(creep) {
     this.constructionSite = bind(this.constructionSite, this);
-    Builder.__super__.constructor.call(this, creep, this.primarySpawn, this.constructionSite);
-    creep.memory.energyRequester = true;
+    Builder.__super__.constructor.call(this, creep, new PathUtils(creep).nearestEnergyProvider, this.constructionSite);
+    creep.memory.energyRequester = false;
   }
 
   Builder.prototype.constructionSite = function() {
