@@ -14,9 +14,14 @@ HunterKiller = (function(superClass) {
   }
 
   HunterKiller.prototype.chooseTarget = function() {
-    var targets;
+    var target, targets;
     targets = new PathUtils(this.creep).sortByDistance(this.creep.room.find(FIND_HOSTILE_CREEPS).concat(this.creep.room.find(FIND_HOSTILE_SPAWNS)));
-    return targets[0];
+    target = targets[0];
+    if (target == null) {
+      return;
+    }
+    console.log(this.creep.name + " closing in on " + (target.name || target.structureType) + ": " + (this.creep.pos.getRangeTo(target)) + " units");
+    return target;
   };
 
   HunterKiller.prototype.loop = function(rally, target) {
