@@ -31,25 +31,45 @@ targetCounts =
   room2_mega_miner2: 1
   room2_transporter: 5
   mega_miner2: 2
-  repair: 3
+  repair: 2
   builder: 1
   upgrader: 3
+  upgrader_filler: 1
   guard: 3
   healbot: 2
   hunter_killer:2
 
 try 
-  if primaryRoom.find(FIND_HOSTILE_CREEPS).length > 0
+  if (1 for a of primaryRoom.find(FIND_HOSTILE_CREEPS)).length > 0
+    console.log("Under Attack")
     targetCounts["guard"] = 10
     Game.notify("Active BattleMode!! #{primaryRoom.find(FIND_HOSTILE_CREEPS).length} hostile creeps in base!!")
+    try
+      if Game.flags.HuntersMark.room.name != primaryRoom.name
+        Game.flags.HuntersMark.setPosition(primarySpawn.pos)
+    catch e
+      throw e
+      Game.notify("Failed to move flag!", 20)
+    
     try 
       nearestTarget = new PathUtils(primaryTower).sortByDistance(primaryRoom.find(FIND_HOSTILE_CREEPS))
       primaryTower.attack(nearestTarget) if nearestTarget?
     catch e
       console.log("Failed to use tower!!!")
       Game.notify("Failed to use tower!!!",20)
+  else
+    # PEACE
+    try
+      if Game.flags.HuntersMark.room.name != room2.name
+        Game.flags.HuntersMark.setPosition(Game.flags.Room2.pos)
+    catch e
+      throw e
+      Game.notify("Failed to move flag!", 20)
+catch
+  throw e if Config.ThrowExceptions
+  console.log("Caught exception! #{e}")
 
-
+try
   cell = new Cell(primaryRoom, targetCounts)
   cell.loop()
   harvestOnly = cell.spawnFailed
@@ -67,6 +87,10 @@ catch e
   throw e if Config.ThrowExceptions
   console.log("Caught exception! #{e}")
 
+upgraders = ->
+  u = primaryRoom.find(FIND_MY_CREEPS).filter((c)->c.role == 'upgrader')
+  u[parseInt(Math.random()*u.length)]
+
 for name, creep of Game.creeps
   try
     switch creep.memory.role.split(":")[0]
@@ -74,6 +98,7 @@ for name, creep of Game.creeps
       when 'hunter_killer' then new HunterKiller(creep).loop(Game.flags.HuntersMark)
       when 'guard' then new Guard(creep).loop()
       when 'tower_filler' then new Deliverator(creep, (-> primarySpawn), (-> primaryTower )).loop()
+      when 'upgrader_filler' then new Deliverator(creep, (-> primarySpawn), ( upgraders )).loop()
       when 'mega_miner' then new MegaMiner(creep, mines[0].source).loop()
       when 'mega_miner2' then new MegaMiner(creep, mines[1].source).loop()
       when 'room2_mega_miner' then new MegaMiner(creep, room2mines[0].source).loop()
