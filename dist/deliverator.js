@@ -74,10 +74,10 @@ Deliverator = (function(superClass) {
       }
     }
     if (err < 0 && err !== ERR_NOT_IN_RANGE) {
-      delete this.creep.memory.sourceTarget;
+      this.creep.memory.failCount++;
     }
     if ((target != null ? target.carryCapacity : void 0) > 0 && (target != null ? (ref1 = target.carry) != null ? ref1.energy : void 0 : void 0) < 20) {
-      delete this.creep.memory.sourceTarget;
+      this.creep.memory.failCount++;
     }
     if (this.creep.memory.failCount > 10) {
       delete this.creep.memory.sourceTarget;
@@ -189,10 +189,6 @@ Deliverator = (function(superClass) {
         this.creep.memory.failCount = 0;
     }
     return ret;
-  };
-
-  Deliverator.prototype.log = function(msg) {
-    return console.log("[" + this.creep.name + "] " + msg);
   };
 
   return Deliverator;

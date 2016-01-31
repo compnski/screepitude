@@ -55,6 +55,10 @@ Agent = (function() {
     return false;
   };
 
+  Agent.prototype.log = function(msg) {
+    return console.log("[" + this.creep.name + "] " + msg);
+  };
+
   return Agent;
 
 })();

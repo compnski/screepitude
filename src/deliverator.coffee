@@ -35,9 +35,9 @@ class Deliverator extends Agent
     else if target.renewCreep?
       target.renewCreep(@creep) if @creep.ticksToLive < parseInt(Config.CreepRenewEnergy)
     if err < 0 && err != ERR_NOT_IN_RANGE
-      delete @creep.memory.sourceTarget
+      @creep.memory.failCount++
     if target?.carryCapacity > 0 && target?.carry?.energy < 20
-      delete @creep.memory.sourceTarget
+      @creep.memory.failCount++
     if @creep.memory.failCount > 10
       delete @creep.memory.sourceTarget
       @creep.memory.failCount = 0
@@ -105,8 +105,5 @@ class Deliverator extends Agent
         @setState('fill')
         @creep.memory.failCount = 0
     return ret
-
-  log: (msg) ->
-    console.log("[#{@creep.name}] #{msg}")
 
 module.exports = Deliverator
