@@ -18,11 +18,11 @@ class Deliverator extends Agent
     if !target
       target = @sourceFn()
       @creep.say("-> #{target.name || target.structureType || target.id}") if target?
+      @log("fill from #{target.name || target.structureType || target.id || target.constructor}") if target?
     @creep.memory.sourceTarget = target
     return false unless target?
-    @log("fill from #{target.name || target.structureType || target.id || target.constructor}")
     harvestFunc = switch
-      when target.structureType == STRUCTURE_SPAWN
+      when target.structureType == STRUCTURE_SPAWN || target.structureType == STRUCTURE_EXTENSION
         => target.transferEnergy(@creep)
       when target.transfer?
         => target.transfer(@creep, RESOURCE_ENERGY)
@@ -30,13 +30,14 @@ class Deliverator extends Agent
         => @creep.harvest(target)
 
     if (err = @creep.memory.lastErr = harvestFunc()) == ERR_NOT_IN_RANGE
-      if @creep.moveTo(target) == ERR_NO_PATH
+      if @creep.moveTo(target,{resusePath:20}) == ERR_NO_PATH
         @creep.memory.failCount++
+        @creep.moveTo(target,{resusePath:0})
     else if target.renewCreep?
       target.renewCreep(@creep) if @creep.ticksToLive < parseInt(Config.CreepRenewEnergy)
-    if err < 0 && err != ERR_NOT_IN_RANGE
+    if err < 0 && err != ERR_NOT_IN_RANGE && err != ERR_NOT_ENOUGH_RESOURCES
       @creep.memory.failCount++
-    if target?.carryCapacity > 0 && target?.carry?.energy < 20
+    if target?.carryCapacity > 0 && target?.carry?.energy == 0
       @creep.memory.failCount++
     if @creep.memory.failCount > 10
       delete @creep.memory.sourceTarget
@@ -50,9 +51,9 @@ class Deliverator extends Agent
     if !target
       target ||= @targetFn()
       @creep.say("<- #{shortName(target)}") if target?
+      @log("deliver to #{target.name || target.structureType || target.constructor} #{@creep.memory.failCount}") if target?
     @creep.memory.deliverTarget = target
     return false unless target?
-    @log("deliver to #{target.name || target.structureType || target.constructor} #{@creep.memory.failCount}")
     deliverFunc = switch
       when target.structureType == STRUCTURE_CONTROLLER
          => @creep.upgradeController(target)
@@ -64,8 +65,9 @@ class Deliverator extends Agent
          => @creep.transfer(target, RESOURCE_ENERGY)
 
     if (err = @creep.memory.lastErr = deliverFunc()) == ERR_NOT_IN_RANGE
-      if @creep.moveTo(target) == ERR_NO_PATH
+      if @creep.moveTo(target, resusePath:10) == ERR_NO_PATH
         @creep.memory.failCount++
+        @creep.moveTo(target,{resusePath:0})
     else if target.renewCreep?
       target.renewCreep(@creep) if @creep.ticksToLive < parseInt(Config.CreepRenewEnergy)
     if err < 0 && err != ERR_NOT_IN_RANGE

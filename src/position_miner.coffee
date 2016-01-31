@@ -8,15 +8,21 @@ class PositionMiner extends Agent
   loop: ->
     return if @fullEnergy()
 
-    if !@creep.pos.inRangeTo(@miningPos, 2)
-      @log("Not in range #{JSON.stringify(@miningPos)}")
-      @creep.moveTo(@miningPos)
-    else
-      sources = new PathUtils(@creep).sortByDistance(@creep.room.find(FIND_SOURCES))
-      @log(sources.map(((s)->s.pos)))
-      source = sources[0]
-      if @creep.harvest(source) == ERR_NOT_IN_RANGE
-        @log("Not in range to harvest #{JSON.stringify(source.pos)}")
-        @creep.moveTo(source)
+    if !@creep.memory.sourceId
+      if @miningPos.roomName == @creep.pos.roomName
+        @creep.memory.sourceId = new PathUtils(@miningPos).sortByDistance(@creep.room.find(FIND_SOURCES))[0].id
+        @log("Found source #{@creep.memory.sourceId}")
+      else
+        @log("Moving toward #{@miningPos}")
+        @creep.moveTo(@miningPos, reusePath:50)
+        return
+
+    if @creep.memory.sourceId
+      source = Game.getObjectById(@creep.memory.sourceId)
+      if (err = @creep.harvest(source) == ERR_NOT_IN_RANGE)
+        @creep.moveTo(source, {reusePath:10})
+      if err == -7
+        delete @creep.memory.sourceId
+        @log('Deleting sourceId!!')
 
 module.exports = PositionMiner

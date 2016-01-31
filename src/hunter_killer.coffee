@@ -13,7 +13,7 @@ class HunterKiller extends Agent
   loop: (rally, target) ->
     rally ||= Game.flags.Flag1
     target ||= @chooseTarget()
-    if !target?
+    if !target? && !@creep.pos.inRangeTo(rally,3)
       @creep.moveTo(rally)
       return
     if ((err = @creep.attack(target)) == ERR_NOT_IN_RANGE)
