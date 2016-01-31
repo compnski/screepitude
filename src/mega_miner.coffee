@@ -5,7 +5,7 @@ class MegaMiner extends Agent
     #As many WORK modules as can fit in the available extensions
     spawnSpace = room.spawnEnergyCapacity()
     # TODO: Put a better max on workParts
-    workParts = Math.min(Math.floor((spawnSpace - 100)/100),5) # move + carry
+    workParts = Math.min(Math.floor((spawnSpace - 100)/150),8) # move + carry
     [MOVE, CARRY, CARRY].concat(WORK for i in [1..workParts])
   constructor: (creep, targetSource=nil) ->
     super(creep)
