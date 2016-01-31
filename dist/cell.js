@@ -3,9 +3,9 @@ var Cell, MegaMiner;
 MegaMiner = require('mega_miner');
 
 Cell = (function() {
-  function Cell(room, targetCounts) {
+  function Cell(room, targetCounts1) {
     this.room = room;
-    this.targetCounts = targetCounts;
+    this.targetCounts = targetCounts1;
   }
 
   Cell.prototype.nameForRole = function(role) {
@@ -19,11 +19,11 @@ Cell = (function() {
   Cell.prototype.spawnEnergyCapacity = function() {
     var s;
     return ((function() {
-      var i, len, ref, results;
+      var j, len, ref, results;
       ref = this.room.find(FIND_MY_STRUCTURES);
       results = [];
-      for (i = 0, len = ref.length; i < len; i++) {
-        s = ref[i];
+      for (j = 0, len = ref.length; j < len; j++) {
+        s = ref[j];
         if (s.structureType === 'extension' || s.structureType === "spawn") {
           results.push(s.energyCapacity);
         }
@@ -35,11 +35,11 @@ Cell = (function() {
   Cell.prototype.spawnEnergy = function() {
     var s;
     return ((function() {
-      var i, len, ref, results;
+      var j, len, ref, results;
       ref = this.room.find(FIND_MY_STRUCTURES);
       results = [];
-      for (i = 0, len = ref.length; i < len; i++) {
-        s = ref[i];
+      for (j = 0, len = ref.length; j < len; j++) {
+        s = ref[j];
         if (s.structureType === 'extension' || s.structureType === "spawn") {
           results.push(s.energy);
         }
@@ -50,34 +50,91 @@ Cell = (function() {
 
   Cell.prototype.partsForRole = function(role) {
     switch (role) {
-      case "harvester":
-        return [WORK, CARRY, MOVE];
+      case "source1":
+      case "source2":
+        return this.makeRole({
+          work: 2,
+          carry: 1,
+          move: 2
+        });
       case "upgrader":
-        return [WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE];
+        return this.makeRole({
+          work: 6,
+          carry: 2,
+          move: 2
+        });
       case "transporter":
-        return [CARRY, CARRY, CARRY, MOVE, MOVE, MOVE];
+        return this.makeRole({
+          carry: 6,
+          move: 3
+        });
       case "room2_transporter":
-        return [CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE];
+      case "position_miner1_transport":
+      case "position_miner2_transport":
+        return this.makeRole({
+          carry: 9,
+          move: 3
+        });
       case "guard":
-        return [TOUGH, TOUGH, TOUGH, TOUGH, MOVE, MOVE, ATTACK, ATTACK];
+        return this.makeRole({
+          tough: 3,
+          move: 2,
+          attack: 3
+        });
       case "hunter_killer":
-        return [TOUGH, TOUGH, ATTACK, ATTACK, ATTACK, MOVE, MOVE, MOVE, MOVE];
+      case "hunter_killer_2":
+        return this.makeRole({
+          tough: 2,
+          attack: 3,
+          move: 4
+        });
       case "healbot":
-        return [TOUGH, TOUGH, TOUGH, HEAL, MOVE, MOVE, MOVE, MOVE];
+      case "healbot_2":
+        return this.makeRole({
+          touch: 3,
+          heal: 2,
+          move: 4
+        });
       case "repair":
-        return [WORK, WORK, CARRY, MOVE, MOVE];
+        return this.makeRole({
+          work: 2,
+          carry: 1,
+          move: 2
+        });
       case "builder":
-        return [WORK, WORK, WORK, CARRY, CARRY, MOVE, MOVE];
+        return this.makeRole({
+          work: 3,
+          carry: 2,
+          move: 3
+        });
       case "mega_miner":
       case "mega_miner2":
+        return MegaMiner.bodyParts(this);
       case "room2_mega_miner":
       case "room2_mega_miner2":
-        return MegaMiner.bodyParts(this);
+      case "position_miner1":
+      case "position_miner2":
+        return MegaMiner.bodyParts(this).concat([MOVE]);
       case 'upgrade_filler':
-        return [CARRY, CARRY, MOVE, MOVE];
+        return this.makeRole({
+          carry: 3,
+          move: 3
+        });
       default:
         return [WORK, CARRY, MOVE];
     }
+  };
+
+  Cell.prototype.makeRole = function(partsMap) {
+    var count, i, j, part, parts, ref;
+    parts = [];
+    for (part in partsMap) {
+      count = partsMap[part];
+      for (i = j = 0, ref = count; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
+        parts.push(part);
+      }
+    }
+    return parts;
   };
 
   Cell.prototype.memoryForRole = function(role) {
@@ -101,8 +158,9 @@ Cell = (function() {
   };
 
   Cell.prototype.loop = function() {
-    var _, creep, creepCount, name1, ref, ref1, results, role, spawn, targetCount;
+    var _, creep, creepCount, name1, numCreeps, ref, ref1, results, role, spawn, targetCount;
     creepCount = {};
+    numCreeps = 0;
     ref = Game.creeps;
     for (_ in ref) {
       creep = ref[_];
@@ -111,6 +169,12 @@ Cell = (function() {
       }
       creepCount[name1 = creep.memory.role] || (creepCount[name1] = 0);
       creepCount[creep.memory.role]++;
+      numCreeps++;
+    }
+    if (numCreeps < 5) {
+      Game.notify("EMERGENCY: CreepCount low: " + (JSON.stringify(creepCount)));
+      targetCounts['source1'] = 2;
+      targetCounts['source2'] = 2;
     }
     console.log("\n");
     console.log(JSON.stringify(creepCount));

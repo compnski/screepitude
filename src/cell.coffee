@@ -16,30 +16,39 @@ class Cell
 
   partsForRole: (role) ->
     switch role
-      when "harvester"
-        [WORK, CARRY, MOVE]
+      when "source1", "source2"
+        @makeRole(work: 2, carry: 1, move: 2)
       when "upgrader"
-        [WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE]
+        @makeRole(work: 6, carry: 2, move: 2)
       when "transporter"
-        [CARRY, CARRY, CARRY, MOVE, MOVE, MOVE]
-      when "room2_transporter"
-        [CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE]
+        @makeRole(carry: 6, move: 3)
+      when "room2_transporter", "position_miner1_transport", "position_miner2_transport"
+        @makeRole(carry: 9, move: 3)
       when "guard"
-        [TOUGH, TOUGH, TOUGH, TOUGH, MOVE, MOVE, ATTACK, ATTACK]
-      when "hunter_killer"
-        [TOUGH, TOUGH, ATTACK, ATTACK, ATTACK, MOVE, MOVE, MOVE, MOVE]
-      when "healbot"
-        [TOUGH, TOUGH, TOUGH, HEAL, MOVE, MOVE, MOVE, MOVE]
+        @makeRole(tough:3, move:2, attack:3)
+      when "hunter_killer","hunter_killer_2"
+        @makeRole(tough:2, attack:3, move:4)
+      when "healbot","healbot_2"
+        @makeRole(touch:3, heal:2, move:4)
       when "repair"
-        [WORK, WORK, CARRY, MOVE, MOVE]
+        @makeRole(work:2, carry:1, move:2)        
       when "builder"
-        [WORK, WORK, WORK, CARRY, CARRY, MOVE, MOVE]
-      when "mega_miner", "mega_miner2", "room2_mega_miner", "room2_mega_miner2"
+        @makeRole(work:3, carry:2, move:3)
+      when "mega_miner", "mega_miner2"
         MegaMiner.bodyParts(@)
+      when "room2_mega_miner", "room2_mega_miner2", "position_miner1", "position_miner2"
+        MegaMiner.bodyParts(@).concat([MOVE])
       when 'upgrade_filler'
-        [CARRY, CARRY, MOVE, MOVE]
+        @makeRole(carry:3, move:3)
       else
         [WORK, CARRY, MOVE]
+
+  makeRole: (partsMap) ->
+      parts = []
+      for part, count of partsMap
+          for i in [0...count]
+              parts.push(part)
+      return parts
             
   memoryForRole: (role) ->
     {"role": role}
@@ -57,10 +66,18 @@ class Cell
 
   loop: ->
     creepCount = {}
+    numCreeps = 0
     for _, creep of Game.creeps
       continue if creep.ticksToLive < 100
       creepCount[creep.memory.role] ||= 0
       creepCount[creep.memory.role]++ 
+      numCreeps++
+
+    if numCreeps < 5
+      Game.notify("EMERGENCY: CreepCount low: #{JSON.stringify(creepCount)}")
+      targetCounts['source1'] = 2
+      targetCounts['source2'] = 2
+
     console.log("\n")
     console.log(JSON.stringify(creepCount))
     spawn = @room.find(FIND_MY_SPAWNS)[0]
