@@ -29,19 +29,24 @@ class Deliverator extends Agent
       when target.constructor == Source
         => @creep.harvest(target)
 
+    moveErr = -1
     if (err = @creep.memory.lastErr = harvestFunc()) == ERR_NOT_IN_RANGE
-      if @creep.moveTo(target,{resusePath:20}) == ERR_NO_PATH
+      if (moveErr = @creep.moveTo(target,{resusePath:60})) == ERR_NO_PATH
         @creep.memory.failCount++
+        @log("Repath")
         @creep.moveTo(target,{resusePath:0})
     else if target.renewCreep?
       target.renewCreep(@creep) if @creep.ticksToLive < parseInt(Config.CreepRenewEnergy)
+    if moveErr == 0
+      return
     if err < 0 && err != ERR_NOT_IN_RANGE && err != ERR_NOT_ENOUGH_RESOURCES
       @creep.memory.failCount++
-    if target?.carryCapacity > 0 && target?.carry?.energy == 0
-      @creep.memory.failCount++
+    #if target?.carryCapacity > 0 && target?.carry?.energy == 0
+    #  @creep.memory.failCount++
     if @creep.memory.failCount > 10
       delete @creep.memory.sourceTarget
       @creep.memory.failCount = 0
+      @log('fill fail')
     if !@creep.memory.sourceTarget && @creep.carry.energy > 20
       @creep.memory.state = 'deliver'
     true
@@ -64,27 +69,32 @@ class Deliverator extends Agent
       else
          => @creep.transfer(target, RESOURCE_ENERGY)
 
+    moveErr = -1
     if (err = @creep.memory.lastErr = deliverFunc()) == ERR_NOT_IN_RANGE
-      if @creep.moveTo(target, resusePath:10) == ERR_NO_PATH
+      if (moveErr = @creep.moveTo(target, resusePath:50)) == ERR_NO_PATH
         @creep.memory.failCount++
         @creep.moveTo(target,{resusePath:0})
+        @log("Repath!")
     else if target.renewCreep?
       target.renewCreep(@creep) if @creep.ticksToLive < parseInt(Config.CreepRenewEnergy)
+    if moveErr == 0
+      return
+    if err == -8
+      delete @creep.memory.deliverTarget
     if err < 0 && err != ERR_NOT_IN_RANGE
+      @log(err)
       @creep.memory.failCount++
-    if target.energyCapacity > 0 && target?.energy == target?.energyCapacity
-      delete @creep.memory.deliverTarget
-    if target?.carryCapacity > 0 && target?.carry?.energy >= (target?.carryCapacity - 10)
-      delete @creep.memory.deliverTarget
-      
-    if @creep.pos.x == @creep.memory.lastPos?.x && @creep.pos.y == @creep.memory.lastPos?.y
-      @creep.memory.failCount++
-    @creep.memory.lastPos = @creep.pos
+    #if @creep.pos.x == @creep.memory.lastPos?.x && @creep.pos.y == @creep.memory.lastPos?.y
+    #  @creep.memory.failCount++
+    #@creep.memory.lastPos = @creep.pos
 
     if @creep.memory.failCount > 10
+      @log('deliver fail')
       delete @creep.memory.deliverTarget
       @creep.memory.failCount = 0
-
+    if @creep.memory.role == 'repair' and target.hits >= Math.min(target.hitsMax, Config.MaxWallHP)
+      delete @creep.memory.deliverTarget
+      @creep.memory.failCount = 0
 
     true
 

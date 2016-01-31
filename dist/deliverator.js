@@ -29,7 +29,7 @@ Deliverator = (function(superClass) {
   }
 
   Deliverator.prototype.fill = function() {
-    var err, harvestFunc, ref, ref1, target;
+    var err, harvestFunc, moveErr, ref, target;
     target = Game.getObjectById((ref = this.creep.memory.sourceTarget) != null ? ref.id : void 0);
     if (!target) {
       target = this.sourceFn();
@@ -66,11 +66,13 @@ Deliverator = (function(superClass) {
           })(this);
       }
     }).call(this);
+    moveErr = -1;
     if ((err = this.creep.memory.lastErr = harvestFunc()) === ERR_NOT_IN_RANGE) {
-      if (this.creep.moveTo(target, {
-        resusePath: 20
-      }) === ERR_NO_PATH) {
+      if ((moveErr = this.creep.moveTo(target, {
+        resusePath: 60
+      })) === ERR_NO_PATH) {
         this.creep.memory.failCount++;
+        this.log("Repath");
         this.creep.moveTo(target, {
           resusePath: 0
         });
@@ -80,15 +82,16 @@ Deliverator = (function(superClass) {
         target.renewCreep(this.creep);
       }
     }
-    if (err < 0 && err !== ERR_NOT_IN_RANGE && err !== ERR_NOT_ENOUGH_RESOURCES) {
-      this.creep.memory.failCount++;
+    if (moveErr === 0) {
+      return;
     }
-    if ((target != null ? target.carryCapacity : void 0) > 0 && (target != null ? (ref1 = target.carry) != null ? ref1.energy : void 0 : void 0) === 0) {
+    if (err < 0 && err !== ERR_NOT_IN_RANGE && err !== ERR_NOT_ENOUGH_RESOURCES) {
       this.creep.memory.failCount++;
     }
     if (this.creep.memory.failCount > 10) {
       delete this.creep.memory.sourceTarget;
       this.creep.memory.failCount = 0;
+      this.log('fill fail');
     }
     if (!this.creep.memory.sourceTarget && this.creep.carry.energy > 20) {
       this.creep.memory.state = 'deliver';
@@ -97,7 +100,7 @@ Deliverator = (function(superClass) {
   };
 
   Deliverator.prototype.deliver = function() {
-    var deliverFunc, err, ref, ref1, ref2, ref3, target;
+    var deliverFunc, err, moveErr, ref, target;
     target = Game.getObjectById((ref = this.creep.memory.deliverTarget) != null ? ref.id : void 0);
     if (!target) {
       target || (target = this.targetFn());
@@ -140,34 +143,38 @@ Deliverator = (function(superClass) {
           })(this);
       }
     }).call(this);
+    moveErr = -1;
     if ((err = this.creep.memory.lastErr = deliverFunc()) === ERR_NOT_IN_RANGE) {
-      if (this.creep.moveTo(target, {
-        resusePath: 10
-      }) === ERR_NO_PATH) {
+      if ((moveErr = this.creep.moveTo(target, {
+        resusePath: 50
+      })) === ERR_NO_PATH) {
         this.creep.memory.failCount++;
         this.creep.moveTo(target, {
           resusePath: 0
         });
+        this.log("Repath!");
       }
     } else if (target.renewCreep != null) {
       if (this.creep.ticksToLive < parseInt(Config.CreepRenewEnergy)) {
         target.renewCreep(this.creep);
       }
     }
+    if (moveErr === 0) {
+      return;
+    }
+    if (err === -8) {
+      delete this.creep.memory.deliverTarget;
+    }
     if (err < 0 && err !== ERR_NOT_IN_RANGE) {
+      this.log(err);
       this.creep.memory.failCount++;
     }
-    if (target.energyCapacity > 0 && (target != null ? target.energy : void 0) === (target != null ? target.energyCapacity : void 0)) {
-      delete this.creep.memory.deliverTarget;
-    }
-    if ((target != null ? target.carryCapacity : void 0) > 0 && (target != null ? (ref1 = target.carry) != null ? ref1.energy : void 0 : void 0) >= ((target != null ? target.carryCapacity : void 0) - 10)) {
-      delete this.creep.memory.deliverTarget;
-    }
-    if (this.creep.pos.x === ((ref2 = this.creep.memory.lastPos) != null ? ref2.x : void 0) && this.creep.pos.y === ((ref3 = this.creep.memory.lastPos) != null ? ref3.y : void 0)) {
-      this.creep.memory.failCount++;
-    }
-    this.creep.memory.lastPos = this.creep.pos;
     if (this.creep.memory.failCount > 10) {
+      this.log('deliver fail');
+      delete this.creep.memory.deliverTarget;
+      this.creep.memory.failCount = 0;
+    }
+    if (this.creep.memory.role === 'repair' && target.hits >= Math.min(target.hitsMax, Config.MaxWallHP)) {
       delete this.creep.memory.deliverTarget;
       this.creep.memory.failCount = 0;
     }

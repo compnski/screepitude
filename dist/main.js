@@ -1,10 +1,11 @@
 var Agent, Builder, Cell, Config, Deliverator, Guard, Healbot, HunterKiller, Mine, PathUtils, PositionMiner, Upgrader, _, a, cell, cellCpu, cpu, cpuByRole, cpuUsed, creep, creepByJob, creepEnergy, e, endCpu, harvestOnly, initCpu, loadCpu, mines, name, name1, nearestEnergyNeed, nearestTarget, primaryRoom, primarySpawn, primaryStorage, primaryTower, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, role, room2, room2Pos, room2mines, room3, room3Pos, startCpu, targetCounts, upgraders;
 
-startCpu = Game.cpu.getUsed();
-
-if (Game.cpu.bucket < 500) {
+if (Game.cpu.bucket < 1500) {
+  Game.notify("CPU LOW!", 20);
   return;
 }
+
+startCpu = Game.cpu.getUsed();
 
 Agent = require('agent');
 
@@ -55,7 +56,8 @@ targetCounts = {
   healbot: 2,
   hunter_killer: 2,
   healbot_2: 2,
-  hunter_killer_2: 2
+  hunter_killer_2: 2,
+  far_builder: 1
 };
 
 Array.prototype.sum = function() {
@@ -153,6 +155,11 @@ try {
   }
 }
 
+if (Game.cpu.bucket < 1800) {
+  Game.notify("CPU LOW!", 20);
+  return;
+}
+
 initCpu = Game.cpu.getUsed();
 
 console.log("Defense took " + (initCpu - loadCpu));
@@ -177,6 +184,10 @@ cellCpu = Game.cpu.getUsed();
 
 console.log("Cell took " + (cellCpu - initCpu));
 
+if (Game.cpu.buck < 2200 && Game.time % 5 === 0) {
+  return;
+}
+
 upgraders = function() {
   var u;
   u = primaryRoom.find(FIND_MY_CREEPS).filter(function(c) {
@@ -190,13 +201,6 @@ creepByJob = {};
 ref = Game.creeps;
 for (name in ref) {
   creep = ref[name];
-  nearestEnergyNeed = function() {
-    if (creep.pos.roomName !== primarySpawn.pos.roomName) {
-      return new PathUtils(primarySpawn).nearestEnergyNeed();
-    } else {
-      return new PathUtils(creep).nearestEnergyNeed();
-    }
-  };
   role = creep.memory['role'];
   creepByJob[role] || (creepByJob[role] = []);
   creepByJob[role].push(creep);
@@ -218,7 +222,7 @@ for (_ in ref1) {
   }
   cpuUsed = Game.cpu.getUsed();
   try {
-    switch (creep.memory.role.split(":")[0]) {
+    switch (creep.memory.role) {
       case 'position_miner1':
         new PositionMiner(creep, (ref2 = Game.flags.Mine_1_1) != null ? ref2.pos : void 0).loop();
         break;
@@ -303,7 +307,7 @@ for (_ in ref1) {
       case 'tower_filler':
         if (primaryTower.energy < primaryTower.energyCapacity) {
           new Deliverator(creep, (function() {
-            return primarySpawn;
+            return primaryStorage;
           }), (function() {
             return primaryTower;
           })).loop();
@@ -322,9 +326,21 @@ for (_ in ref1) {
         }
         break;
       case !Config.NoBuilders && 'builder':
-        new Builder(creep, function() {
+        new Builder(creep, (function() {
           return primaryStorage;
-        }).loop();
+        })).loop();
+        break;
+      case !Config.NoBuilders && 'far_builder':
+        new Builder(creep, (function() {
+          return (new PathUtils(creep)).nearestEnergyNeed();
+        }), Game.flags.BuildHere).loop();
+        break;
+      case 'source1':
+        new Deliverator(creep, (function() {
+          return primaryRoom.find(FIND_SOURCES)[0];
+        }), (function() {
+          return (new PathUtils(creep)).nearestEnergyNeed();
+        })).loop();
         break;
       case 'source2':
         new Deliverator(creep, (function() {
@@ -334,27 +350,31 @@ for (_ in ref1) {
         })).loop();
         break;
       case 'transporter':
+        nearestEnergyNeed = function() {
+          var targets;
+          if (creep.pos.roomName !== primarySpawn.pos.roomName) {
+            return new PathUtils(primarySpawn).nearestEnergyNeed();
+          } else {
+            targets = new PathUtils(creep).sortByDistance(creep.room.find(FIND_MY_STRUCTURES).filter(function(c) {
+              return (c.structureType === 'extension' || c.structureType === 'spawn') && c.energy < c.energyCapacity;
+            }));
+            return targets[parseInt(Math.random() * Math.min(targets.length, 2))];
+          }
+        };
         new Deliverator(creep, (function() {
           return primaryStorage;
         }), nearestEnergyNeed).loop();
         break;
-      case 'source1':
-        new Deliverator(creep, (function() {
-          return primaryRoom.find(FIND_SOURCES)[0];
-        }), (function() {
-          return (new PathUtils(creep)).nearestEnergyNeed();
-        })).loop();
-        break;
       case 'repair':
-        (!Config.NoRepairs ? new Deliverator(creep, (function() {
-          return primarySpawn;
-        }), (function() {
-          return (new PathUtils(creep)).sortByDistance(primaryRoom.find(FIND_MY_STRUCTURES).filter(function(s) {
-            return s.structureType !== 'rampart' && s.hits < s.hitsMax;
-          }))[0];
-        })).loop() : void 0) || (!Config.NoBuilders ? new Builder(creep, function() {
-          return primaryStorage;
-        }).loop() : void 0);
+        if (!Config.NoRepairs) {
+          new Deliverator(creep, (function() {
+            return primaryStorage;
+          }), (function() {
+            return (new PathUtils(creep)).sortByDistance(primaryRoom.find(FIND_STRUCTURES).filter(function(s) {
+              return s.structureType !== 'rampart' && s.hits < Math.min(s.hitsMax, Config.MaxWallHP);
+            }))[0];
+          })).loop();
+        }
         break;
       default:
         console.log("Orphan bot " + creep.name);
@@ -374,7 +394,9 @@ for (_ in ref1) {
 
 for (role in cpuByRole) {
   cpu = cpuByRole[role];
-  console.log("Processed " + (role.paddingLeft("                                                ")) + " \tin " + (Math.trunc(cpu * 1000)) + " cpu");
+  if (cpu > 1) {
+    console.log("Processed " + (role.paddingLeft("                                                ")) + " \tin " + (Math.trunc(cpu * 1000)) + " cpu");
+  }
 }
 
 endCpu = Game.cpu.getUsed();
@@ -385,7 +407,7 @@ console.log("Creeps took " + (endCpu - cellCpu));
 
 console.log("Total took " + (endCpu - startCpu));
 
-console.log(" Spawn: " + (cell.spawnEnergy()) + "\tTower: " + primaryTower.energy + "\tCreep: " + creepEnergy + "\tStore: " + primaryStorage.store.energy + "\tCPU Bucket: " + Game.cpu.bucket);
+console.log(" Spawn: " + (cell.spawnEnergy()) + "/" + (cell.spawnEnergyCapacity()) + "\tTower: " + primaryTower.energy + "\tCreep: " + creepEnergy + "\tStore: " + primaryStorage.store.energy + "\tCPU Bucket: " + Game.cpu.bucket);
 
 console.log('FIN');
 

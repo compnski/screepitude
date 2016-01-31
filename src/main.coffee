@@ -1,6 +1,8 @@
+if Game.cpu.bucket < 1500
+  Game.notify("CPU LOW!", 20)
+  return
 startCpu = Game.cpu.getUsed()
 
-return if Game.cpu.bucket < 500
 Agent = require('agent')
 Mine = require('mine')
 Deliverator = require('deliverator')
@@ -15,6 +17,11 @@ HunterKiller = require('hunter_killer')
 
 PositionMiner = require('position_miner')
 
+
+#
+#  Task = {body, class, args, condition, priority, count, generatedRoleName}
+# 
+# Creates a set of roles based on tasks
 
 targetCounts = 
   source1: 0
@@ -45,6 +52,7 @@ targetCounts =
   hunter_killer:2
   healbot_2: 2
   hunter_killer_2:2
+  far_builder: 1
 
 
 Array.prototype.sum = ->
@@ -101,6 +109,9 @@ try
 catch
   console.log("Caught exception! #{e}")
   throw e if Config.ThrowExceptions
+if Game.cpu.bucket < 1800
+  Game.notify("CPU LOW!", 20)
+  return
 
 
 initCpu = Game.cpu.getUsed()
@@ -124,20 +135,15 @@ catch e
 
 cellCpu = Game.cpu.getUsed()
 console.log("Cell took #{cellCpu - initCpu}")
+return if Game.cpu.buck < 2200 && Game.time % 5 == 0
 
 upgraders = ->
   u = primaryRoom.find(FIND_MY_CREEPS).filter((c)->c.memory.role == 'upgrader')
   u[parseInt(Math.random()*u.length)]
 
+
 creepByJob = {}
 for name, creep of Game.creeps
-
-  nearestEnergyNeed = ->
-    if creep.pos.roomName != primarySpawn.pos.roomName
-      # Return to primary spawn if not there
-      return new PathUtils(primarySpawn).nearestEnergyNeed()
-    else
-      new PathUtils(creep).nearestEnergyNeed()
   role = creep.memory['role']
   creepByJob[role] ||= []
   creepByJob[role].push(creep)
@@ -152,7 +158,7 @@ for _, creep of Game.creeps
   #console.log 'run', creep.name
   cpuUsed = Game.cpu.getUsed()
   try
-    switch creep.memory.role.split(":")[0]
+    switch creep.memory.role
       when 'position_miner1' then new PositionMiner(creep, Game.flags.Mine_1_1?.pos).loop()
       when 'position_miner2' then new PositionMiner(creep, Game.flags.Mine_1_2?.pos).loop()
       when 'position_miner3' then new PositionMiner(creep, Game.flags.Mine_2_2?.pos).loop()
@@ -177,21 +183,31 @@ for _, creep of Game.creeps
       when 'guard' then new Guard(creep).loop()
       when 'tower_filler'  
         if primaryTower.energy < primaryTower.energyCapacity
-          new Deliverator(creep, (-> primarySpawn), (-> primaryTower )).loop()
+          new Deliverator(creep, (-> primaryStorage), (-> primaryTower )).loop()
         else
+          #new Builder(creep, -> primaryStorage).loop()
           continue
       when !Config.NoUpgrades && 'upgrader_filler' then new Deliverator(creep, (-> primaryStorage), upgraders).loop()
       when 'upgrader' then new Upgrader(creep).loop() unless Config.NoUpgrades
-      when !Config.NoBuilders && 'builder' then new Builder(creep, -> primaryStorage).loop()
-      when 'source2' then new Deliverator(creep, (-> primaryRoom.find(FIND_SOURCES)[1]), (-> (new PathUtils(creep)).nearestEnergyNeed() )).loop()
-      when 'transporter' then new Deliverator(creep, (-> primaryStorage), nearestEnergyNeed).loop()
-#      when 'source1' then new Deliverator(creep, (-> (new PathUtils(creep)).nearestEnergyProvider()), (-> (new PathUtils(creep)).nearestEnergyNeed() )).loop()
+      when !Config.NoBuilders && 'builder' then new Builder(creep, (-> primaryStorage)).loop()
+      when !Config.NoBuilders && 'far_builder' then new Builder(creep, (-> (new PathUtils(creep)).nearestEnergyNeed()), Game.flags.BuildHere).loop()
+
       when 'source1' then new Deliverator(creep, (-> primaryRoom.find(FIND_SOURCES)[0]), (-> (new PathUtils(creep)).nearestEnergyNeed() )).loop()
+      when 'source2' then new Deliverator(creep, (-> primaryRoom.find(FIND_SOURCES)[1]), (-> (new PathUtils(creep)).nearestEnergyNeed() )).loop()
+      when 'transporter' 
+        nearestEnergyNeed = ->
+          if creep.pos.roomName != primarySpawn.pos.roomName
+            # Return to primary spawn if not there
+            return new PathUtils(primarySpawn).nearestEnergyNeed()
+          else
+            targets = new PathUtils(creep).sortByDistance(creep.room.find(FIND_MY_STRUCTURES).filter((c) -> (c.structureType == 'extension' || c.structureType == 'spawn') && c.energy < c.energyCapacity))
+            targets[parseInt(Math.random()*Math.min(targets.length,2))]
+        new Deliverator(creep, (-> primaryStorage), nearestEnergyNeed).loop()
       when 'repair'
-        ((new Deliverator(creep, 
-          (-> primarySpawn), 
-          (-> (new PathUtils(creep)).sortByDistance(primaryRoom.find(FIND_MY_STRUCTURES).filter((s)->s.structureType != 'rampart' && s.hits < s.hitsMax ))[0])).loop() unless Config.NoRepairs  ) || 
-         (new Builder(creep, -> primaryStorage).loop() unless Config.NoBuilders))
+        new Deliverator(creep, 
+          (-> primaryStorage), 
+          (-> (new PathUtils(creep)).sortByDistance(primaryRoom.find(FIND_STRUCTURES).filter((s)->s.structureType != 'rampart' && s.hits < Math.min(s.hitsMax, Config.MaxWallHP) ))[0])).loop() unless Config.NoRepairs
+         #(new Builder(creep, -> primaryStorage).loop() unless Config.NoBuilders))
       else
         console.log("Orphan bot #{creep.name}")
   catch e
@@ -202,12 +218,11 @@ for _, creep of Game.creeps
     cpuByRole[creep.memory.role] ||= 0
     cpuByRole[creep.memory.role] += Game.cpu.getUsed() - cpuUsed
     #console.log "Processed #{creep.name.paddingLeft("                                                ")} \tin #{Math.trunc((Game.cpu.getUsed() - cpuUsed)*1000)} cpu"
-
 for role, cpu of cpuByRole
-  console.log "Processed #{role.paddingLeft("                                                ")} \tin #{Math.trunc((cpu)*1000)} cpu"
+  console.log "Processed #{role.paddingLeft("                                                ")} \tin #{Math.trunc((cpu)*1000)} cpu" if cpu > 1
 endCpu = Game.cpu.getUsed()
 console.log('-----')
 console.log("Creeps took #{endCpu - cellCpu}")
 console.log("Total took #{endCpu - startCpu}")
-console.log(" Spawn: #{cell.spawnEnergy()}\tTower: #{primaryTower.energy}\tCreep: #{creepEnergy}\tStore: #{primaryStorage.store.energy}\tCPU Bucket: #{Game.cpu.bucket}")
+console.log(" Spawn: #{cell.spawnEnergy()}/#{cell.spawnEnergyCapacity()}\tTower: #{primaryTower.energy}\tCreep: #{creepEnergy}\tStore: #{primaryStorage.store.energy}\tCPU Bucket: #{Game.cpu.bucket}")
 console.log('FIN')
