@@ -41,7 +41,7 @@ Deliverator = (function(superClass) {
     if (target == null) {
       return false;
     }
-    console.log(this.creep.name + " will fill from " + (target.name || target.structureType || target.id || target.constructor));
+    this.log("fill from " + (target.name || target.structureType || target.id || target.constructor));
     harvestFunc = (function() {
       switch (false) {
         case target.structureType !== STRUCTURE_SPAWN:
@@ -79,7 +79,7 @@ Deliverator = (function(superClass) {
     if ((target != null ? target.carryCapacity : void 0) > 0 && (target != null ? (ref1 = target.carry) != null ? ref1.energy : void 0 : void 0) < 20) {
       delete this.creep.memory.sourceTarget;
     }
-    if (this.creep.memory.failCount > 5) {
+    if (this.creep.memory.failCount > 10) {
       delete this.creep.memory.sourceTarget;
       this.creep.memory.failCount = 0;
     }
@@ -87,7 +87,7 @@ Deliverator = (function(superClass) {
   };
 
   Deliverator.prototype.deliver = function() {
-    var deliverFunc, err, ref, ref1, target;
+    var deliverFunc, err, ref, ref1, ref2, ref3, target;
     target = Game.getObjectById((ref = this.creep.memory.deliverTarget) != null ? ref.id : void 0);
     if (!target) {
       target || (target = this.targetFn());
@@ -99,7 +99,7 @@ Deliverator = (function(superClass) {
     if (target == null) {
       return false;
     }
-    console.log(this.creep.name + " will deliver to " + (target.name || target.structureType || target.constructor));
+    this.log("deliver to " + (target.name || target.structureType || target.constructor) + " " + this.creep.memory.failCount);
     deliverFunc = (function() {
       switch (false) {
         case target.structureType !== STRUCTURE_CONTROLLER:
@@ -114,7 +114,7 @@ Deliverator = (function(superClass) {
               return _this.creep.build(target);
             };
           })(this);
-        case !(target.structureType === STRUCTURE_WALL || target.structureType === STRUCTURE_ROAD):
+        case !(target.structureType === STRUCTURE_WALL || target.structureType === STRUCTURE_ROAD || target.structureType === STRUCTURE_RAMPART):
           return (function(_this) {
             return function() {
               return _this.creep.repair(target);
@@ -138,7 +138,7 @@ Deliverator = (function(superClass) {
       }
     }
     if (err < 0 && err !== ERR_NOT_IN_RANGE) {
-      delete this.creep.memory.deliverTarget;
+      this.creep.memory.failCount++;
     }
     if (target.energyCapacity > 0 && (target != null ? target.energy : void 0) === (target != null ? target.energyCapacity : void 0)) {
       delete this.creep.memory.deliverTarget;
@@ -146,11 +146,11 @@ Deliverator = (function(superClass) {
     if ((target != null ? target.carryCapacity : void 0) > 0 && (target != null ? (ref1 = target.carry) != null ? ref1.energy : void 0 : void 0) >= ((target != null ? target.carryCapacity : void 0) - 10)) {
       delete this.creep.memory.deliverTarget;
     }
-    if (this.creep.pos.isEqualTo(this.creep.memory.lastPos)) {
+    if (this.creep.pos.x === ((ref2 = this.creep.memory.lastPos) != null ? ref2.x : void 0) && this.creep.pos.y === ((ref3 = this.creep.memory.lastPos) != null ? ref3.y : void 0)) {
       this.creep.memory.failCount++;
     }
     this.creep.memory.lastPos = this.creep.pos;
-    if (this.creep.memory.failCount > 5) {
+    if (this.creep.memory.failCount > 10) {
       delete this.creep.memory.deliverTarget;
       this.creep.memory.failCount = 0;
     }
@@ -158,6 +158,16 @@ Deliverator = (function(superClass) {
   };
 
   Deliverator.prototype.loop = function() {
+    var e;
+    try {
+      return this.loopAction();
+    } catch (_error) {
+      e = _error;
+      return this.log(e.stack);
+    }
+  };
+
+  Deliverator.prototype.loopAction = function() {
     var ret;
     switch (this.creep.memory.state) {
       case 'fill':
@@ -176,6 +186,10 @@ Deliverator = (function(superClass) {
         this.creep.memory.failCount = 0;
     }
     return ret;
+  };
+
+  Deliverator.prototype.log = function(msg) {
+    return console.log("[" + this.creep.name + "] " + msg);
   };
 
   return Deliverator;

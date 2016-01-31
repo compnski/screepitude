@@ -22,6 +22,9 @@ Guard = (function(superClass) {
   Guard.prototype.loop = function() {
     var err, target;
     target = this.chooseTarget();
+    if ((target != null) && this.creep.pos.getRangeTo(target) > 5) {
+      target = null;
+    }
     if (target == null) {
       this.creep.moveTo(Game.flags.Flag1);
       return;

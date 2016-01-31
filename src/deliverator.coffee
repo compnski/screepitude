@@ -20,7 +20,7 @@ class Deliverator extends Agent
       @creep.say("-> #{target.name || target.structureType || target.id}") if target?
     @creep.memory.sourceTarget = target
     return false unless target?
-    console.log("#{@creep.name} will fill from #{target.name || target.structureType || target.id || target.constructor}")
+    @log("fill from #{target.name || target.structureType || target.id || target.constructor}")
     harvestFunc = switch
       when target.structureType == STRUCTURE_SPAWN
         => target.transferEnergy(@creep)
@@ -38,7 +38,7 @@ class Deliverator extends Agent
       delete @creep.memory.sourceTarget
     if target?.carryCapacity > 0 && target?.carry?.energy < 20
       delete @creep.memory.sourceTarget
-    if @creep.memory.failCount > 5
+    if @creep.memory.failCount > 10
       delete @creep.memory.sourceTarget
       @creep.memory.failCount = 0
     true
@@ -50,13 +50,13 @@ class Deliverator extends Agent
       @creep.say("<- #{shortName(target)}") if target?
     @creep.memory.deliverTarget = target
     return false unless target?
-    console.log("#{@creep.name} will deliver to #{target.name || target.structureType || target.constructor}")
+    @log("deliver to #{target.name || target.structureType || target.constructor} #{@creep.memory.failCount}")
     deliverFunc = switch
       when target.structureType == STRUCTURE_CONTROLLER
          => @creep.upgradeController(target)
       when target.constructor == ConstructionSite
          => @creep.build(target)
-      when target.structureType == STRUCTURE_WALL || target.structureType == STRUCTURE_ROAD
+      when target.structureType == STRUCTURE_WALL || target.structureType == STRUCTURE_ROAD || target.structureType == STRUCTURE_RAMPART
         => @creep.repair(target)
       else
          => @creep.transfer(target, RESOURCE_ENERGY)
@@ -67,24 +67,31 @@ class Deliverator extends Agent
     else if target.renewCreep?
       target.renewCreep(@creep) if @creep.ticksToLive < parseInt(Config.CreepRenewEnergy)
     if err < 0 && err != ERR_NOT_IN_RANGE
-      delete @creep.memory.deliverTarget
+      @creep.memory.failCount++
     if target.energyCapacity > 0 && target?.energy == target?.energyCapacity
       delete @creep.memory.deliverTarget
     if target?.carryCapacity > 0 && target?.carry?.energy >= (target?.carryCapacity - 10)
       delete @creep.memory.deliverTarget
       
-    if @creep.pos.isEqualTo(@creep.memory.lastPos)
+    if @creep.pos.x == @creep.memory.lastPos?.x && @creep.pos.y == @creep.memory.lastPos?.y
       @creep.memory.failCount++
     @creep.memory.lastPos = @creep.pos
 
-    if @creep.memory.failCount > 5
+    if @creep.memory.failCount > 10
       delete @creep.memory.deliverTarget
       @creep.memory.failCount = 0
 
 
     true
 
-  loop: ->
+
+  loop: -> 
+    try
+      @loopAction()
+    catch e
+      @log(e.stack)
+
+  loopAction: ->
     switch @creep.memory.state
       when 'fill' then ret = @fill()
       when 'deliver' then ret = @deliver()
@@ -96,5 +103,8 @@ class Deliverator extends Agent
         @setState('fill')
         @creep.memory.failCount = 0
     return ret
+
+  log: (msg) ->
+    console.log("[#{@creep.name}] #{msg}")
 
 module.exports = Deliverator
