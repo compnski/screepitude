@@ -25,7 +25,7 @@ Healbot = (function(superClass) {
     var err, target;
     target = this.chooseTarget();
     rally || (rally = Game.flags.Flag1);
-    if (target == null) {
+    if ((target == null) && !this.creep.pos.inRangeTo(rally, 3)) {
       this.creep.moveTo(rally);
       return;
     }

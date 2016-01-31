@@ -20,13 +20,14 @@ Guard = (function(superClass) {
   };
 
   Guard.prototype.loop = function() {
-    var err, target;
+    var err, rally, target;
     target = this.chooseTarget();
     if ((target != null) && this.creep.pos.getRangeTo(target) > 5) {
       target = null;
     }
-    if (target == null) {
-      this.creep.moveTo(Game.flags.Flag1);
+    rally = Game.flags.Flag1;
+    if ((target == null) && !this.creep.pos.inRangeTo(rally, 3)) {
+      this.creep.moveTo(rally);
       return;
     }
     if ((err = this.creep.attack(target)) === ERR_NOT_IN_RANGE) {

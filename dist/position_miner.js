@@ -16,22 +16,32 @@ PositionMiner = (function(superClass) {
   }
 
   PositionMiner.prototype.loop = function() {
-    var source, sources;
+    var err, source;
     if (this.fullEnergy()) {
       return;
     }
-    if (!this.creep.pos.inRangeTo(this.miningPos, 2)) {
-      this.log("Not in range " + (JSON.stringify(this.miningPos)));
-      return this.creep.moveTo(this.miningPos);
-    } else {
-      sources = new PathUtils(this.creep).sortByDistance(this.creep.room.find(FIND_SOURCES));
-      this.log(sources.map((function(s) {
-        return s.pos;
-      })));
-      source = sources[0];
-      if (this.creep.harvest(source) === ERR_NOT_IN_RANGE) {
-        this.log("Not in range to harvest " + (JSON.stringify(source.pos)));
-        return this.creep.moveTo(source);
+    if (!this.creep.memory.sourceId) {
+      if (this.miningPos.roomName === this.creep.pos.roomName) {
+        this.creep.memory.sourceId = new PathUtils(this.miningPos).sortByDistance(this.creep.room.find(FIND_SOURCES))[0].id;
+        this.log("Found source " + this.creep.memory.sourceId);
+      } else {
+        this.log("Moving toward " + this.miningPos);
+        this.creep.moveTo(this.miningPos, {
+          reusePath: 50
+        });
+        return;
+      }
+    }
+    if (this.creep.memory.sourceId) {
+      source = Game.getObjectById(this.creep.memory.sourceId);
+      if ((err = this.creep.harvest(source) === ERR_NOT_IN_RANGE)) {
+        this.creep.moveTo(source, {
+          reusePath: 10
+        });
+      }
+      if (err === -7) {
+        delete this.creep.memory.sourceId;
+        return this.log('Deleting sourceId!!');
       }
     }
   };

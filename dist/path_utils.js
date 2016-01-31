@@ -7,11 +7,17 @@ PathUtils = (function() {
     this.nearestEnergyProvider = bind(this.nearestEnergyProvider, this);
     this.nearestEnergyNeed = bind(this.nearestEnergyNeed, this);
     this.distanceComparator = bind(this.distanceComparator, this);
-    this.pos = this.creep.pos;
+    this.pos = this.creep;
+    if (this.creep.pos != null) {
+      this.pos = this.creep.pos;
+    }
+    this.pos_S = this.pos.roomName + "_" + this.pos.x + "_" + this.pos.y;
   }
 
   PathUtils.prototype.sortByDistance = function(targets) {
-    return targets.sort(this.distanceComparator);
+    var t;
+    t = targets.sort(this.distanceComparator);
+    return t;
   };
 
   PathUtils.prototype.distance = function(target) {
@@ -23,16 +29,16 @@ PathUtils = (function() {
     if (a.distances == null) {
       a.distances = {};
     }
-    if ((base = a.distances)[name = this.creep.id] == null) {
+    if ((base = a.distances)[name = this.pos_S] == null) {
       base[name] = this.distance(a);
     }
     if (b.distances == null) {
       b.distances = {};
     }
-    if ((base1 = b.distances)[name1 = this.creep.id] == null) {
+    if ((base1 = b.distances)[name1 = this.pos_S] == null) {
       base1[name1] = this.distance(b);
     }
-    return a.distances[this.creep.id] - b.distances[this.creep.id];
+    return a.distances[this.pos_S] - b.distances[this.pos_S];
   };
 
   PathUtils.prototype.nearestEnergyNeed = function(room) {
@@ -44,13 +50,8 @@ PathUtils = (function() {
     targets = room.find(FIND_MY_STRUCTURES).filter(function(c) {
       return (c.structureType === 'extension' || c.structureType === 'spawn') && c.energy < c.energyCapacity;
     });
-    targets = targets.concat(room.find(FIND_MY_CREEPS).filter(function(c) {
-      return c.memory.energyRequester && c.carry.energy < c.carryCapacity;
-    }));
     this.sortByDistance(targets);
-    if (targets.length !== 0) {
-      return targets[parseInt(Math.random() * Math.min(targets.length, 3))];
-    }
+    return targets[0];
   };
 
   PathUtils.prototype.nearestEnergyProvider = function(room) {
@@ -62,10 +63,11 @@ PathUtils = (function() {
     targets = room.find(FIND_MY_CREEPS).filter(function(c) {
       return c.memory.energyProvider && c.carry.energy > 20;
     });
+    targets = targets.concat(room.find(FIND_MY_STRUCTURES).filter(function(c) {
+      return (c.structureType === 'extension' || c.structureType === 'spawn') && c.energy > 0;
+    }));
     this.sortByDistance(targets);
-    if (targets.length !== 0) {
-      return targets[parseInt(Math.random() * Math.min(targets.length, 3))];
-    }
+    return targets[0];
   };
 
   return PathUtils;

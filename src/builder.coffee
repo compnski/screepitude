@@ -2,9 +2,16 @@ PathUtils = require('path_utils')
 Deliverator = require('deliverator')
 Config = require('config')
 class Builder extends Deliverator
-  constructor: (creep) ->
-    @pathUtils = new PathUtils(creep)
-    super(creep, @pathUtils.nearestEnergyProvider, @constructionSite)
+  constructor: (creep, sourceFn=null) ->
+    if Game.flags.BuildHere?
+      target = Game.flags.BuildHere
+    else
+      target = creep
+    
+    unless sourceFn?
+      @pathUtils ||= new PathUtils(target)
+      sourceFn = @pathUtils.nearestEnergyProvider
+    super(creep, sourceFn, @constructionSite)
     creep.memory.energyRequester = true
 
   ramparts: (s) ->
@@ -14,6 +21,7 @@ class Builder extends Deliverator
     s.structureType == 'constructedWall' && s.hits < Math.min(s.hitsMax, (Config.MaxWallHP || 3000000))
 
   constructionSite: =>
+    @pathUtils ||= new PathUtils(target)
     sites = @pathUtils.sortByDistance(@creep.room.find(FIND_MY_CONSTRUCTION_SITES))
     if sites.length == 0
       sites = @pathUtils.sortByDistance(@creep.room.find(FIND_MY_STRUCTURES).filter(@ramparts))

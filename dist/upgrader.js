@@ -10,15 +10,9 @@ Upgrader = (function(superClass) {
   extend(Upgrader, superClass);
 
   function Upgrader(creep) {
-    var base;
-    Upgrader.__super__.constructor.call(this, creep, (function() {
-      return null;
-    }), this.roomController);
-    (base = creep.memory).state || (base.state = 'deliver');
+    Upgrader.__super__.constructor.call(this, creep, (function() {}), this.roomController);
+    creep.memory.state = 'deliver';
     creep.memory.energyRequester = true;
-    if (creep.carry.energy === 0) {
-      Game.notify(creep.name + " out of energy", 60);
-    }
   }
 
   Upgrader.prototype.roomController = function() {

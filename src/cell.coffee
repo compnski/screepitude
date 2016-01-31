@@ -33,7 +33,7 @@ class Cell
       when "repair"
         @makeRole(work:2, carry:1, move:2)        
       when "builder"
-        @makeRole(work:3, carry:2, move:3)
+        @makeRole(work:4, carry:2, move:3)
       when "mega_miner", "mega_miner2"
         MegaMiner.bodyParts(@)
       when "room2_mega_miner", "room2_mega_miner2"
@@ -45,7 +45,7 @@ class Cell
           if role.indexOf("transport") == -1 # Miner
             MegaMiner.bodyParts(@).concat([MOVE])    
           else # Transporter
-            @makeRole(carry: 9, move: 3)
+            @makeRole(carry: 8, move: 4)
         else
           [WORK, CARRY, MOVE]
 
@@ -59,18 +59,40 @@ class Cell
   memoryForRole: (role) ->
     {"role": role}
 
+  partsCost: (parts) ->
+    parts.map((s)->
+      switch s
+        when TOUGH then 10
+        when MOVE, CARRY then 50
+        when ATTACK then 80
+        when WORK then 100
+        when RANGED_ATTACK then 150
+        when HEAL then 250
+      ).sum()
+
+  # Returns true if the creep was spawned or we can spawn but dont have enough energy
+  # Returns false only if the capacity is too low or definition is bad
   spawn: (spawnFrom, role) ->
     name = @nameForRole(role)
     parts = @partsForRole(role)
     memory = @memoryForRole(role)
+    partsCost = @partsCost(parts)
+    if partsCost > @spawnEnergyCapacity()
+      console.log("Can't spawn #{role} due to max capacity -- have #{@spawnEnergyCapacity()}/#{partsCost}")
+      return false
     ret = spawnFrom.createCreep(parts, name, memory)
     if ret == ERR_NOT_ENOUGH_RESOURCES
-      console.log("Can't spawn #{role} due to resources -- have #{@spawnEnergy()}/#{@spawnEnergyCapacity()}")
+      console.log("Can't spawn #{role} due to resources -- have #{@spawnEnergy()}/#{partsCost}")
       @spawnFailed = true
+      return true
+    else if ret < 0
+      console.log("Can't spawn #{role} due to other error: #{err} -- have #{@spawnEnergy()}/#{partsCost}")
+      return false
     else
       console.log("Spawning #{role} named #{name} from #{spawnFrom.name} with #{parts} and #{JSON.stringify(memory)}, got #{ret}")
 
   loop: ->
+    return if Game.cpu.bucket < 3000
     creepCount = {}
     numCreeps = 0
     for _, creep of Game.creeps
@@ -90,8 +112,8 @@ class Cell
     if not spawn.spawning
       for role, targetCount of @targetCounts
         if (creepCount[role]||0) < targetCount
-          @spawn(spawn, role)
-          break
+          if @spawn(spawn, role)
+            break
 
 
 module.exports = Cell

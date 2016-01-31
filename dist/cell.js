@@ -101,7 +101,7 @@ Cell = (function() {
         });
       case "builder":
         return this.makeRole({
-          work: 3,
+          work: 4,
           carry: 2,
           move: 3
         });
@@ -122,8 +122,8 @@ Cell = (function() {
             return MegaMiner.bodyParts(this).concat([MOVE]);
           } else {
             return this.makeRole({
-              carry: 9,
-              move: 3
+              carry: 8,
+              move: 4
             });
           }
         } else {
@@ -150,15 +150,44 @@ Cell = (function() {
     };
   };
 
+  Cell.prototype.partsCost = function(parts) {
+    return parts.map(function(s) {
+      switch (s) {
+        case TOUGH:
+          return 10;
+        case MOVE:
+        case CARRY:
+          return 50;
+        case ATTACK:
+          return 80;
+        case WORK:
+          return 100;
+        case RANGED_ATTACK:
+          return 150;
+        case HEAL:
+          return 250;
+      }
+    }).sum();
+  };
+
   Cell.prototype.spawn = function(spawnFrom, role) {
-    var memory, name, parts, ret;
+    var memory, name, parts, partsCost, ret;
     name = this.nameForRole(role);
     parts = this.partsForRole(role);
     memory = this.memoryForRole(role);
+    partsCost = this.partsCost(parts);
+    if (partsCost > this.spawnEnergyCapacity()) {
+      console.log("Can't spawn " + role + " due to max capacity -- have " + (this.spawnEnergyCapacity()) + "/" + partsCost);
+      return false;
+    }
     ret = spawnFrom.createCreep(parts, name, memory);
     if (ret === ERR_NOT_ENOUGH_RESOURCES) {
-      console.log("Can't spawn " + role + " due to resources -- have " + (this.spawnEnergy()) + "/" + (this.spawnEnergyCapacity()));
-      return this.spawnFailed = true;
+      console.log("Can't spawn " + role + " due to resources -- have " + (this.spawnEnergy()) + "/" + partsCost);
+      this.spawnFailed = true;
+      return true;
+    } else if (ret < 0) {
+      console.log("Can't spawn " + role + " due to other error: " + err + " -- have " + (this.spawnEnergy()) + "/" + partsCost);
+      return false;
     } else {
       return console.log("Spawning " + role + " named " + name + " from " + spawnFrom.name + " with " + parts + " and " + (JSON.stringify(memory)) + ", got " + ret);
     }
@@ -166,6 +195,9 @@ Cell = (function() {
 
   Cell.prototype.loop = function() {
     var _, creep, creepCount, name1, numCreeps, ref, ref1, results, role, spawn, targetCount;
+    if (Game.cpu.bucket < 3000) {
+      return;
+    }
     creepCount = {};
     numCreeps = 0;
     ref = Game.creeps;
@@ -192,8 +224,11 @@ Cell = (function() {
       for (role in ref1) {
         targetCount = ref1[role];
         if ((creepCount[role] || 0) < targetCount) {
-          this.spawn(spawn, role);
-          break;
+          if (this.spawn(spawn, role)) {
+            break;
+          } else {
+            results.push(void 0);
+          }
         } else {
           results.push(void 0);
         }

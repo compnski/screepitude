@@ -36,15 +36,17 @@ Deliverator = (function(superClass) {
       if (target != null) {
         this.creep.say("-> " + (target.name || target.structureType || target.id));
       }
+      if (target != null) {
+        this.log("fill from " + (target.name || target.structureType || target.id || target.constructor));
+      }
     }
     this.creep.memory.sourceTarget = target;
     if (target == null) {
       return false;
     }
-    this.log("fill from " + (target.name || target.structureType || target.id || target.constructor));
     harvestFunc = (function() {
       switch (false) {
-        case target.structureType !== STRUCTURE_SPAWN:
+        case !(target.structureType === STRUCTURE_SPAWN || target.structureType === STRUCTURE_EXTENSION):
           return (function(_this) {
             return function() {
               return target.transferEnergy(_this.creep);
@@ -65,18 +67,23 @@ Deliverator = (function(superClass) {
       }
     }).call(this);
     if ((err = this.creep.memory.lastErr = harvestFunc()) === ERR_NOT_IN_RANGE) {
-      if (this.creep.moveTo(target) === ERR_NO_PATH) {
+      if (this.creep.moveTo(target, {
+        resusePath: 20
+      }) === ERR_NO_PATH) {
         this.creep.memory.failCount++;
+        this.creep.moveTo(target, {
+          resusePath: 0
+        });
       }
     } else if (target.renewCreep != null) {
       if (this.creep.ticksToLive < parseInt(Config.CreepRenewEnergy)) {
         target.renewCreep(this.creep);
       }
     }
-    if (err < 0 && err !== ERR_NOT_IN_RANGE) {
+    if (err < 0 && err !== ERR_NOT_IN_RANGE && err !== ERR_NOT_ENOUGH_RESOURCES) {
       this.creep.memory.failCount++;
     }
-    if ((target != null ? target.carryCapacity : void 0) > 0 && (target != null ? (ref1 = target.carry) != null ? ref1.energy : void 0 : void 0) < 20) {
+    if ((target != null ? target.carryCapacity : void 0) > 0 && (target != null ? (ref1 = target.carry) != null ? ref1.energy : void 0 : void 0) === 0) {
       this.creep.memory.failCount++;
     }
     if (this.creep.memory.failCount > 10) {
@@ -97,12 +104,14 @@ Deliverator = (function(superClass) {
       if (target != null) {
         this.creep.say("<- " + (shortName(target)));
       }
+      if (target != null) {
+        this.log("deliver to " + (target.name || target.structureType || target.constructor) + " " + this.creep.memory.failCount);
+      }
     }
     this.creep.memory.deliverTarget = target;
     if (target == null) {
       return false;
     }
-    this.log("deliver to " + (target.name || target.structureType || target.constructor) + " " + this.creep.memory.failCount);
     deliverFunc = (function() {
       switch (false) {
         case target.structureType !== STRUCTURE_CONTROLLER:
@@ -132,8 +141,13 @@ Deliverator = (function(superClass) {
       }
     }).call(this);
     if ((err = this.creep.memory.lastErr = deliverFunc()) === ERR_NOT_IN_RANGE) {
-      if (this.creep.moveTo(target) === ERR_NO_PATH) {
+      if (this.creep.moveTo(target, {
+        resusePath: 10
+      }) === ERR_NO_PATH) {
         this.creep.memory.failCount++;
+        this.creep.moveTo(target, {
+          resusePath: 0
+        });
       }
     } else if (target.renewCreep != null) {
       if (this.creep.ticksToLive < parseInt(Config.CreepRenewEnergy)) {

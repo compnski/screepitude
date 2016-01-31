@@ -28,7 +28,7 @@ HunterKiller = (function(superClass) {
     var err;
     rally || (rally = Game.flags.Flag1);
     target || (target = this.chooseTarget());
-    if (target == null) {
+    if ((target == null) && !this.creep.pos.inRangeTo(rally, 3)) {
       this.creep.moveTo(rally);
       return;
     }
