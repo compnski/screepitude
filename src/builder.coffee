@@ -7,8 +7,8 @@ class Builder extends Deliverator
     super(creep, @pathUtils.nearestEnergyProvider, @constructionSite)
     creep.memory.energyRequester = true
 
-  rampartsAndTowers: (s) ->
-    (s.structureType == 'rampart' || s.structureType == 'tower') && s.hits < s.hitsMax
+  ramparts: (s) ->
+    (s.structureType == 'rampart') && (s.hits < Math.min(Config.MaxWallHP, s.hitsMax))
 
   walls: (s) ->
     s.structureType == 'constructedWall' && s.hits < Math.min(s.hitsMax, (Config.MaxWallHP || 3000000))
@@ -16,10 +16,9 @@ class Builder extends Deliverator
   constructionSite: =>
     sites = @pathUtils.sortByDistance(@creep.room.find(FIND_MY_CONSTRUCTION_SITES))
     if sites.length == 0
-      sites = @pathUtils.sortByDistance(@creep.room.find(FIND_MY_STRUCTURES).filter(@rampartsAndTowers))
-    if sites.length == 0
-      sites = @pathUtils.sortByDistance(@creep.room.find(FIND_STRUCTURES).filter(@walls))
-    console.log sites
+      sites = @pathUtils.sortByDistance(@creep.room.find(FIND_MY_STRUCTURES).filter(@ramparts))
+    #if sites.length == 0
+      #sites = @pathUtils.sortByDistance(@creep.room.find(FIND_STRUCTURES).filter(@walls))
     sites[0]
 
 module.exports = Builder

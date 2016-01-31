@@ -19,8 +19,8 @@ Builder = (function(superClass) {
     creep.memory.energyRequester = true;
   }
 
-  Builder.prototype.rampartsAndTowers = function(s) {
-    return (s.structureType === 'rampart' || s.structureType === 'tower') && s.hits < s.hitsMax;
+  Builder.prototype.ramparts = function(s) {
+    return (s.structureType === 'rampart') && (s.hits < Math.min(Config.MaxWallHP, s.hitsMax));
   };
 
   Builder.prototype.walls = function(s) {
@@ -31,12 +31,8 @@ Builder = (function(superClass) {
     var sites;
     sites = this.pathUtils.sortByDistance(this.creep.room.find(FIND_MY_CONSTRUCTION_SITES));
     if (sites.length === 0) {
-      sites = this.pathUtils.sortByDistance(this.creep.room.find(FIND_MY_STRUCTURES).filter(this.rampartsAndTowers));
+      sites = this.pathUtils.sortByDistance(this.creep.room.find(FIND_MY_STRUCTURES).filter(this.ramparts));
     }
-    if (sites.length === 0) {
-      sites = this.pathUtils.sortByDistance(this.creep.room.find(FIND_STRUCTURES).filter(this.walls));
-    }
-    console.log(sites);
     return sites[0];
   };
 
