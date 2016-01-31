@@ -10,7 +10,7 @@ class Guard extends Agent
     target = null if target? && @creep.pos.getRangeTo(target) > 5
 
     rally = Game.flags.Flag1
-    if !target? && !@creep.pos.inRangeTo(rally,3)
+    if !target? && !@creep.pos.inRangeTo(rally,2)
       @creep.moveTo(rally)
       return
     if ((err = @creep.attack(target)) == ERR_NOT_IN_RANGE)

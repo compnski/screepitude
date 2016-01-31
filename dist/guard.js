@@ -26,7 +26,7 @@ Guard = (function(superClass) {
       target = null;
     }
     rally = Game.flags.Flag1;
-    if ((target == null) && !this.creep.pos.inRangeTo(rally, 3)) {
+    if ((target == null) && !this.creep.pos.inRangeTo(rally, 2)) {
       this.creep.moveTo(rally);
       return;
     }
