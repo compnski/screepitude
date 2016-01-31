@@ -59,7 +59,7 @@ Cell = (function() {
         });
       case "upgrader":
         return this.makeRole({
-          work: 6,
+          work: 7,
           carry: 2,
           move: 2
         });
@@ -96,8 +96,14 @@ Cell = (function() {
       case "builder":
       case "repair":
         return this.makeRole({
-          work: 8,
-          carry: 2,
+          work: 6,
+          carry: 4,
+          move: 5
+        });
+      case "far_builder":
+        return this.makeRole({
+          work: 4,
+          carry: 6,
           move: 5
         });
       case "mega_miner":
@@ -106,7 +112,7 @@ Cell = (function() {
       case "room2_mega_miner":
       case "room2_mega_miner2":
         return MegaMiner.bodyParts(this).concat([MOVE]);
-      case 'upgrade_filler':
+      case 'upgrader_filler':
         return this.makeRole({
           carry: 6,
           move: 3
@@ -117,8 +123,8 @@ Cell = (function() {
             return MegaMiner.bodyParts(this).concat([MOVE]);
           } else {
             return this.makeRole({
-              carry: 8,
-              move: 4
+              carry: 12,
+              move: 6
             });
           }
         } else {
@@ -191,7 +197,11 @@ Cell = (function() {
 
   Cell.prototype.loop = function() {
     var _, creep, creepCount, name1, numCreeps, ref, ref1, results, role, spawn, targetCount;
-    if (Game.cpu.bucket < 3000) {
+    spawn = Game.spawns.Spawn1;
+    if (Game.cpu.bucket < 2000) {
+      return;
+    }
+    if (spawn.spawning) {
       return;
     }
     creepCount = {};
@@ -213,7 +223,6 @@ Cell = (function() {
     }
     console.log("\n");
     console.log(JSON.stringify(creepCount));
-    spawn = this.room.find(FIND_MY_SPAWNS)[0];
     if (!spawn.spawning) {
       ref1 = this.targetCounts;
       results = [];

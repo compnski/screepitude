@@ -12,13 +12,16 @@ Config = require('config');
 Builder = (function(superClass) {
   extend(Builder, superClass);
 
-  function Builder(creep, sourceFn) {
+  function Builder(creep, sourceFn, rallyFlag) {
     if (sourceFn == null) {
       sourceFn = null;
     }
+    if (rallyFlag == null) {
+      rallyFlag = null;
+    }
     this.constructionSite = bind(this.constructionSite, this);
-    if (Game.flags.BuildHere != null) {
-      this.target = Game.flags.BuildHere;
+    if (rallyFlag != null) {
+      this.target = rallyFlag;
     } else {
       this.target = creep;
     }
@@ -39,11 +42,23 @@ Builder = (function(superClass) {
   };
 
   Builder.prototype.constructionSite = function() {
-    var sites;
+    var ref, ref1, ref2, ref3, sites;
     this.pathUtils || (this.pathUtils = new PathUtils(this.target));
     sites = this.pathUtils.sortByDistance(this.creep.room.find(FIND_MY_CONSTRUCTION_SITES));
+    if (sites.length === 0 && this.creep.memory.role === 'far_builder') {
+      sites = [];
+      sites = sites.concat((ref = Game.flags.Room2) != null ? (ref1 = ref.room) != null ? ref1.find(FIND_MY_CONSTRUCTION_SITES) : void 0 : void 0);
+      sites = sites.concat((ref2 = Game.flags.Room3) != null ? (ref3 = ref2.room) != null ? ref3.find(FIND_MY_CONSTRUCTION_SITES) : void 0 : void 0);
+      sites = this.pathUtils.sortByDistance(sites);
+    }
     if (sites.length === 0) {
       sites = this.pathUtils.sortByDistance(this.creep.room.find(FIND_MY_STRUCTURES).filter(this.ramparts));
+    }
+    if (sites.length === 0) {
+      sites = this.pathUtils.sortByDistance(this.creep.room.find(FIND_STRUCTURES).filter(this.walls));
+    }
+    if (sites.length === 0) {
+      sites = [this.creep.room.controller];
     }
     return sites[0];
   };

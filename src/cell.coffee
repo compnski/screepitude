@@ -19,7 +19,7 @@ class Cell
       when "source1", "source2"
         @makeRole(work: 2, carry: 1, move: 2)
       when "upgrader"
-        @makeRole(work: 6, carry: 2, move: 2)
+        @makeRole(work: 7, carry: 2, move: 2)
       when "transporter"
         @makeRole(carry: 6, move: 3)
       when "room2_transporter"
@@ -31,19 +31,21 @@ class Cell
       when "healbot","healbot_2"
         @makeRole(tough:2, heal:1, move:3)
       when "builder", "repair"
-        @makeRole(work:8, carry:2, move:5)
+        @makeRole(work:6, carry:4, move:5)
+      when "far_builder"
+        @makeRole(work:4, carry:6, move: 5)
       when "mega_miner", "mega_miner2"
         MegaMiner.bodyParts(@)
       when "room2_mega_miner", "room2_mega_miner2"
         MegaMiner.bodyParts(@).concat([MOVE])
-      when 'upgrade_filler'
+      when 'upgrader_filler'
         @makeRole(carry:6, move:3)
       else
         if role.startsWith("position_miner")
           if role.indexOf("transport") == -1 # Miner
             MegaMiner.bodyParts(@).concat([MOVE])    
           else # Transporter
-            @makeRole(carry: 8, move: 4)
+            @makeRole(carry: 12, move: 6)
         else
           [WORK, CARRY, MOVE]
 
@@ -91,7 +93,9 @@ class Cell
     true
 
   loop: ->
-    return if Game.cpu.bucket < 3000
+    spawn = Game.spawns.Spawn1
+    return if Game.cpu.bucket < 2000
+    return if spawn.spawning
     creepCount = {}
     numCreeps = 0
     for _, creep of Game.creeps
@@ -107,7 +111,6 @@ class Cell
 
     console.log("\n")
     console.log(JSON.stringify(creepCount))
-    spawn = @room.find(FIND_MY_SPAWNS)[0]
     if not spawn.spawning
       for role, targetCount of @targetCounts
         if (creepCount[role]||0) < targetCount

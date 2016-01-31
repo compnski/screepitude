@@ -2,9 +2,9 @@ PathUtils = require('path_utils')
 Deliverator = require('deliverator')
 Config = require('config')
 class Builder extends Deliverator
-  constructor: (creep, sourceFn=null) ->
-    if Game.flags.BuildHere?
-      @target = Game.flags.BuildHere
+  constructor: (creep, sourceFn=null, rallyFlag=null) ->
+    if rallyFlag?
+      @target = rallyFlag
     else
       @target = creep
     
@@ -23,10 +23,17 @@ class Builder extends Deliverator
   constructionSite: =>
     @pathUtils ||= new PathUtils(@target)
     sites = @pathUtils.sortByDistance(@creep.room.find(FIND_MY_CONSTRUCTION_SITES))
+    if sites.length == 0 && @creep.memory.role == 'far_builder'
+      sites = []
+      sites = sites.concat(Game.flags.Room2?.room?.find(FIND_MY_CONSTRUCTION_SITES))
+      sites = sites.concat(Game.flags.Room3?.room?.find(FIND_MY_CONSTRUCTION_SITES))
+      sites = @pathUtils.sortByDistance(sites)
     if sites.length == 0
       sites = @pathUtils.sortByDistance(@creep.room.find(FIND_MY_STRUCTURES).filter(@ramparts))
-    #if sites.length == 0
-      #sites = @pathUtils.sortByDistance(@creep.room.find(FIND_STRUCTURES).filter(@walls))
+    if sites.length == 0
+      sites = @pathUtils.sortByDistance(@creep.room.find(FIND_STRUCTURES).filter(@walls))
+    if sites.length == 0
+      sites = [@creep.room.controller]
     sites[0]
 
 module.exports = Builder
