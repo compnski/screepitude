@@ -90,7 +90,16 @@ upgraders = ->
   u = primaryRoom.find(FIND_MY_CREEPS).filter((c)->c.memory.role == 'upgrader')
   u[parseInt(Math.random()*u.length)]
 
+creepByJob = {}
 for name, creep of Game.creeps
+  role = creep.memory['role']
+  creepByJob[role] ||= []
+  creepByJob[role].push(creep)
+
+for creep in (creep for _, creep of Game.creeps).shuffle()
+  if Game.flags.ClearTargets?
+    delete creep.memory.sourceTarget
+    delete creep.memory.deliverTarget
   try
     switch creep.memory.role.split(":")[0]
       when 'healbot' then new Healbot(creep).loop(Game.flags.HuntersMark)
