@@ -12,6 +12,7 @@ PositionMiner = (function(superClass) {
   function PositionMiner(creep, miningPos) {
     this.miningPos = miningPos;
     PositionMiner.__super__.constructor.call(this, creep);
+    creep.memory.energyProvider = true;
   }
 
   PositionMiner.prototype.loop = function() {
@@ -19,13 +20,17 @@ PositionMiner = (function(superClass) {
     if (this.fullEnergy()) {
       return;
     }
-    if (!this.creep.pos.inRangeTo(this.miningPos, 1)) {
+    if (!this.creep.pos.inRangeTo(this.miningPos, 2)) {
+      this.log("Not in range " + (JSON.stringify(this.miningPos)));
       return this.creep.moveTo(this.miningPos);
     } else {
-      sources = this.creep.room.find(FIND_SOURCES);
-      new PathUtils(this.creep).sortByDistance(sources);
+      sources = new PathUtils(this.creep).sortByDistance(this.creep.room.find(FIND_SOURCES));
+      this.log(sources.map((function(s) {
+        return s.pos;
+      })));
       source = sources[0];
       if (this.creep.harvest(source) === ERR_NOT_IN_RANGE) {
+        this.log("Not in range to harvest " + (JSON.stringify(source.pos)));
         return this.creep.moveTo(source);
       }
     }

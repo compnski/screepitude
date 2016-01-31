@@ -69,8 +69,6 @@ Cell = (function() {
           move: 3
         });
       case "room2_transporter":
-      case "position_miner1_transport":
-      case "position_miner2_transport":
         return this.makeRole({
           carry: 9,
           move: 3
@@ -112,8 +110,6 @@ Cell = (function() {
         return MegaMiner.bodyParts(this);
       case "room2_mega_miner":
       case "room2_mega_miner2":
-      case "position_miner1":
-      case "position_miner2":
         return MegaMiner.bodyParts(this).concat([MOVE]);
       case 'upgrade_filler':
         return this.makeRole({
@@ -121,7 +117,18 @@ Cell = (function() {
           move: 3
         });
       default:
-        return [WORK, CARRY, MOVE];
+        if (role.startsWith("position_miner")) {
+          if (role.indexOf("transport") === -1) {
+            return MegaMiner.bodyParts(this).concat([MOVE]);
+          } else {
+            return this.makeRole({
+              carry: 9,
+              move: 3
+            });
+          }
+        } else {
+          return [WORK, CARRY, MOVE];
+        }
     }
   };
 
