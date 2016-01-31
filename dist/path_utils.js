@@ -15,17 +15,24 @@ PathUtils = (function() {
   };
 
   PathUtils.prototype.distance = function(target) {
-    return this.pos.getRangeTo(target) + Math.random() * 2;
+    return this.pos.getRangeTo(target);
   };
 
   PathUtils.prototype.distanceComparator = function(a, b) {
-    if (a.distance == null) {
-      a.distance = this.distance(a);
+    var base, base1, name, name1;
+    if (a.distances == null) {
+      a.distances = {};
     }
-    if (b.distance == null) {
-      b.distance = this.distance(b);
+    if ((base = a.distances)[name = this.creep.id] == null) {
+      base[name] = this.distance(a);
     }
-    return a.distance - b.distance;
+    if (b.distances == null) {
+      b.distances = {};
+    }
+    if ((base1 = b.distances)[name1 = this.creep.id] == null) {
+      base1[name1] = this.distance(b);
+    }
+    return a.distances[this.creep.id] - b.distances[this.creep.id];
   };
 
   PathUtils.prototype.nearestEnergyNeed = function(room) {

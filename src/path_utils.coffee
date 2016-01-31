@@ -7,12 +7,14 @@ class PathUtils
     targets.sort(@distanceComparator)
 
   distance: (target) ->
-    @pos.getRangeTo(target) + Math.random() * 2
+    @pos.getRangeTo(target)
 
   distanceComparator: (a,b) =>
-    a.distance ?= @distance(a)
-    b.distance ?= @distance(b)
-    return a.distance - b.distance
+    a.distances ?= {}
+    a.distances[@creep.id] ?= @distance(a)
+    b.distances ?= {}
+    b.distances[@creep.id] ?= @distance(b)
+    return a.distances[@creep.id] - b.distances[@creep.id]
 
   nearestEnergyNeed: (room=null) =>
     # TODO: Units can request energy via flag
