@@ -22,7 +22,7 @@ class Cell
         @makeRole(work: 6, carry: 2, move: 2)
       when "transporter"
         @makeRole(carry: 6, move: 3)
-      when "room2_transporter", "position_miner1_transport", "position_miner2_transport"
+      when "room2_transporter"
         @makeRole(carry: 9, move: 3)
       when "guard"
         @makeRole(tough:3, move:2, attack:3)
@@ -36,12 +36,18 @@ class Cell
         @makeRole(work:3, carry:2, move:3)
       when "mega_miner", "mega_miner2"
         MegaMiner.bodyParts(@)
-      when "room2_mega_miner", "room2_mega_miner2", "position_miner1", "position_miner2"
+      when "room2_mega_miner", "room2_mega_miner2"
         MegaMiner.bodyParts(@).concat([MOVE])
       when 'upgrade_filler'
         @makeRole(carry:3, move:3)
       else
-        [WORK, CARRY, MOVE]
+        if role.startsWith("position_miner")
+          if role.indexOf("transport") == -1 # Miner
+            MegaMiner.bodyParts(@).concat([MOVE])    
+          else # Transporter
+            @makeRole(carry: 9, move: 3)
+        else
+          [WORK, CARRY, MOVE]
 
   makeRole: (partsMap) ->
       parts = []

@@ -32,4 +32,8 @@ class Agent
   needsEnergy: -> false
   hasEnergy: -> false
 
+  log: (msg) ->
+    console.log("[#{@creep.name}] #{msg}")
+
+
 module.exports = Agent

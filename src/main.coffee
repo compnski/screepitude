@@ -10,7 +10,7 @@ Config = require('config')
 PathUtils = require('path_utils')
 Healbot = require('healbot')
 HunterKiller = require('hunter_killer')
-
+PositionMiner = require('position_miner')
 
 Array.prototype.shuffle = ->
     a = @
@@ -38,26 +38,35 @@ primaryTower = primaryRoom.find(FIND_MY_STRUCTURES).filter((s)->s.structureType 
 targetCounts = 
   source1: 0
   source2: 0
+
+  position_miner1:1
+  position_miner1_transport:2
+  position_miner2:1
+  position_miner2_transport:2
+
+  position_miner3:1
+  position_miner3_transport:2
+  position_miner4:1
+  position_miner4_transport:2
+
   tower_filler: 1
-  mega_miner2: 1
-  transporter:5
-  mega_miner: 1
-  repair: 0
-  builder: 1
-  upgrader: 3
-  upgrader_filler: 2
+  transporter:2
+  repair: 1 unless Config.NoRepairs
+  builder: 1 unless Config.NoBuilders
+  upgrader: 3 unless Config.NoUpgrades
+  upgrader_filler: 2 unless Config.NoUpgrades
   guard: 3
   healbot: 2
   hunter_killer:2
   healbot_2: 2
   hunter_killer_2:2
-  room2_mega_miner2: 1
-  room2_transporter: 8
-  room2_mega_miner: 1
-  position_miner1:1
-  position_miner1_transport:3
-  position_miner2:1
-  position_miner2_transport:3
+
+
+#  room2_mega_miner2: 0
+#  room2_transporter: 0
+#  room2_mega_miner: 0
+#  mega_miner: 0
+#  mega_miner2: 0
 
 try 
   if (1 for a of primaryRoom.find(FIND_HOSTILE_CREEPS)).length > 0
@@ -118,22 +127,38 @@ upgraders = ->
 
 creepByJob = {}
 for name, creep of Game.creeps
+
+  nearestEnergyNeed = ->
+    if creep.pos.roomName != primarySpawn.pos.roomName
+      # Return to primary spawn if not there
+      return new PathUtils(primarySpawn).nearestEnergyNeed()
+    else
+      new PathUtils(creep).nearestEnergyNeed()
   role = creep.memory['role']
   creepByJob[role] ||= []
   creepByJob[role].push(creep)
 
-for creep in (creep for _, creep of Game.creeps).shuffle()
+for creep in (creep for _, creep of Game.creeps)#.shuffle()
   if Game.flags.ClearTargets?
     delete creep.memory.sourceTarget
     delete creep.memory.deliverTarget
   #console.log 'run', creep.name
   try
     switch creep.memory.role.split(":")[0]
-      when 'position_miner1' then new PositionMiner(creep, Game.flags.Mine_3_0?.pos).loop()
-      when 'position_miner2' then new PositionMiner(creep, Game.flags.Mine_3_1?.pos).loop()
+      when 'position_miner1' then new PositionMiner(creep, Game.flags.Mine_1_1?.pos).loop()
+      when 'position_miner2' then new PositionMiner(creep, Game.flags.Mine_1_2?.pos).loop()
+      when 'position_miner3' then new PositionMiner(creep, Game.flags.Mine_2_2?.pos).loop()
+      when 'position_miner4' then new PositionMiner(creep, Game.flags.Mine_2_1?.pos).loop()
+      when 'position_miner5' then new PositionMiner(creep, Game.flags.Mine_3_1?.pos).loop()
+      when 'position_miner6' then new PositionMiner(creep, Game.flags.Mine_3_2?.pos).loop()
 
-      when 'position_miner1_transport' then new Deliverator(creep, (-> creepByJob['position_miner1'][0]), (-> primarySpawn)).loop()
-      when 'position_miner2_transport' then new Deliverator(creep, (-> creepByJob['position_miner2'][0]), (-> primarySpawn)).loop()
+      when 'position_miner1_transport' then new Deliverator(creep, (-> creepByJob['position_miner1'][0]),  nearestEnergyNeed).loop()
+      when 'position_miner2_transport' then new Deliverator(creep, (-> creepByJob['position_miner2'][0]),  nearestEnergyNeed).loop()
+      when 'position_miner3_transport' then new Deliverator(creep, (-> creepByJob['position_miner3'][0]),  nearestEnergyNeed).loop()
+      when 'position_miner4_transport' then new Deliverator(creep, (-> creepByJob['position_miner4'][0]),  nearestEnergyNeed).loop()
+      when 'position_miner5_transport' then new Deliverator(creep, (-> creepByJob['position_miner5'][0]),  nearestEnergyNeed).loop()
+      when 'position_miner6_transport' then new Deliverator(creep, (-> creepByJob['position_miner6'][0]),  nearestEnergyNeed).loop()
+
 
       when 'healbot' then new Healbot(creep).loop(Game.flags.HuntersMark)
       when 'hunter_killer' then new HunterKiller(creep).loop(Game.flags.HuntersMark)
@@ -146,14 +171,14 @@ for creep in (creep for _, creep of Game.creeps).shuffle()
         if primaryTower.energy < primaryTower.energyCapacity
           new Deliverator(creep, (-> primarySpawn), (-> primaryTower )).loop()
         else
-          new Builder(creep).loop() unless Config.NoBuilders
-      when 'upgrader_filler' then new Deliverator(creep, (-> primarySpawn), ( upgraders )).loop()
+          (new Builder(creep).loop() unless Config.NoBuilders)
+      when !Config.NoUpgrades && 'upgrader_filler' then new Deliverator(creep, (-> primarySpawn), ( upgraders )).loop()
       when 'mega_miner' then new MegaMiner(creep, mines[0].source).loop()
       when 'mega_miner2' then new MegaMiner(creep, mines[1].source).loop()
       when 'room2_mega_miner' then new MegaMiner(creep, room2mines[0].source).loop() if room2?
       when 'room2_mega_miner2' then new MegaMiner(creep, room2mines[1].source).loop() if room2?
       when 'upgrader' then new Upgrader(creep).loop() unless Config.NoUpgrades
-      when 'builder' then new Builder(creep).loop() unless Config.NoBuilders
+      when !Config.NoBuilders && 'builder' then new Builder(creep).loop()
       when 'source2' then new Deliverator(creep, (-> primaryRoom.find(FIND_SOURCES)[1]), (-> (new PathUtils(creep)).nearestEnergyNeed() )).loop()
       when 'transporter' then new Deliverator(creep, (-> (new PathUtils(creep)).nearestEnergyProvider()), (-> (new PathUtils(creep)).nearestEnergyNeed() )).loop()
       when 'room2_transporter' then new Deliverator(creep, (-> (new PathUtils(creep)).nearestEnergyProvider(room2)), (-> (new PathUtils(creep)).nearestEnergyNeed(primaryRoom) )).loop()
@@ -164,6 +189,8 @@ for creep in (creep for _, creep of Game.creeps).shuffle()
           (-> primarySpawn), 
           (-> (new PathUtils(creep)).sortByDistance(primaryRoom.find(FIND_MY_STRUCTURES).filter((s)->s.structureType != 'rampart' && s.hits < s.hitsMax ))[0])).loop() unless Config.NoRepairs  ) || 
          (new Builder(creep).loop() unless Config.NoBuilders))
+      else
+        console.log("Orphan bot #{creep.name}")
   catch e
     throw e if Config.ThrowExceptions
     console.log("Caught exception! #{e}")

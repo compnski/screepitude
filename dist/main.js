@@ -1,4 +1,4 @@
-var Agent, Builder, Cell, Config, Deliverator, Guard, Healbot, HunterKiller, MegaMiner, Mine, PathUtils, Upgrader, _, a, cell, creep, creepByJob, e, harvestOnly, k, len, mines, name, nearestTarget, primaryRoom, primarySpawn, primaryTower, ref, ref1, ref2, ref3, role, room2, room2Pos, room2mines, room3, room3Pos, targetCounts, upgraders;
+var Agent, Builder, Cell, Config, Deliverator, Guard, Healbot, HunterKiller, MegaMiner, Mine, PathUtils, PositionMiner, Upgrader, _, a, cell, creep, creepByJob, e, harvestOnly, k, len, mines, name, nearestEnergyNeed, nearestTarget, primaryRoom, primarySpawn, primaryTower, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, role, room2, room2Pos, room2mines, room3, room3Pos, targetCounts, upgraders;
 
 Agent = require('agent');
 
@@ -23,6 +23,8 @@ PathUtils = require('path_utils');
 Healbot = require('healbot');
 
 HunterKiller = require('hunter_killer');
+
+PositionMiner = require('position_miner');
 
 Array.prototype.shuffle = function() {
   var a, i, j, t;
@@ -65,26 +67,25 @@ primaryTower = primaryRoom.find(FIND_MY_STRUCTURES).filter(function(s) {
 targetCounts = {
   source1: 0,
   source2: 0,
+  position_miner1: 1,
+  position_miner1_transport: 2,
+  position_miner2: 1,
+  position_miner2_transport: 2,
+  position_miner3: 1,
+  position_miner3_transport: 2,
+  position_miner4: 1,
+  position_miner4_transport: 2,
   tower_filler: 1,
-  mega_miner2: 1,
-  transporter: 5,
-  mega_miner: 1,
-  repair: 0,
-  builder: 1,
-  upgrader: 3,
-  upgrader_filler: 2,
+  transporter: 2,
+  repair: !Config.NoRepairs ? 1 : void 0,
+  builder: !Config.NoBuilders ? 1 : void 0,
+  upgrader: !Config.NoUpgrades ? 3 : void 0,
+  upgrader_filler: !Config.NoUpgrades ? 2 : void 0,
   guard: 3,
   healbot: 2,
   hunter_killer: 2,
   healbot_2: 2,
-  hunter_killer_2: 2,
-  room2_mega_miner2: 1,
-  room2_transporter: 8,
-  room2_mega_miner: 1,
-  position_miner1: 1,
-  position_miner1_transport: 3,
-  position_miner2: 1,
-  position_miner2_transport: 3
+  hunter_killer_2: 2
 };
 
 try {
@@ -174,12 +175,19 @@ creepByJob = {};
 ref = Game.creeps;
 for (name in ref) {
   creep = ref[name];
+  nearestEnergyNeed = function() {
+    if (creep.pos.roomName !== primarySpawn.pos.roomName) {
+      return new PathUtils(primarySpawn).nearestEnergyNeed();
+    } else {
+      return new PathUtils(creep).nearestEnergyNeed();
+    }
+  };
   role = creep.memory['role'];
   creepByJob[role] || (creepByJob[role] = []);
   creepByJob[role].push(creep);
 }
 
-ref1 = ((function() {
+ref1 = (function() {
   var ref1, results;
   ref1 = Game.creeps;
   results = [];
@@ -188,7 +196,7 @@ ref1 = ((function() {
     results.push(creep);
   }
   return results;
-})()).shuffle();
+})();
 for (k = 0, len = ref1.length; k < len; k++) {
   creep = ref1[k];
   if (Game.flags.ClearTargets != null) {
@@ -198,24 +206,52 @@ for (k = 0, len = ref1.length; k < len; k++) {
   try {
     switch (creep.memory.role.split(":")[0]) {
       case 'position_miner1':
-        new PositionMiner(creep, (ref2 = Game.flags.Mine_3_0) != null ? ref2.pos : void 0).loop();
+        new PositionMiner(creep, (ref2 = Game.flags.Mine_1_1) != null ? ref2.pos : void 0).loop();
         break;
       case 'position_miner2':
-        new PositionMiner(creep, (ref3 = Game.flags.Mine_3_1) != null ? ref3.pos : void 0).loop();
+        new PositionMiner(creep, (ref3 = Game.flags.Mine_1_2) != null ? ref3.pos : void 0).loop();
+        break;
+      case 'position_miner3':
+        new PositionMiner(creep, (ref4 = Game.flags.Mine_2_2) != null ? ref4.pos : void 0).loop();
+        break;
+      case 'position_miner4':
+        new PositionMiner(creep, (ref5 = Game.flags.Mine_2_1) != null ? ref5.pos : void 0).loop();
+        break;
+      case 'position_miner5':
+        new PositionMiner(creep, (ref6 = Game.flags.Mine_3_1) != null ? ref6.pos : void 0).loop();
+        break;
+      case 'position_miner6':
+        new PositionMiner(creep, (ref7 = Game.flags.Mine_3_2) != null ? ref7.pos : void 0).loop();
         break;
       case 'position_miner1_transport':
         new Deliverator(creep, (function() {
           return creepByJob['position_miner1'][0];
-        }), (function() {
-          return primarySpawn;
-        })).loop();
+        }), nearestEnergyNeed).loop();
         break;
       case 'position_miner2_transport':
         new Deliverator(creep, (function() {
           return creepByJob['position_miner2'][0];
-        }), (function() {
-          return primarySpawn;
-        })).loop();
+        }), nearestEnergyNeed).loop();
+        break;
+      case 'position_miner3_transport':
+        new Deliverator(creep, (function() {
+          return creepByJob['position_miner3'][0];
+        }), nearestEnergyNeed).loop();
+        break;
+      case 'position_miner4_transport':
+        new Deliverator(creep, (function() {
+          return creepByJob['position_miner4'][0];
+        }), nearestEnergyNeed).loop();
+        break;
+      case 'position_miner5_transport':
+        new Deliverator(creep, (function() {
+          return creepByJob['position_miner5'][0];
+        }), nearestEnergyNeed).loop();
+        break;
+      case 'position_miner6_transport':
+        new Deliverator(creep, (function() {
+          return creepByJob['position_miner6'][0];
+        }), nearestEnergyNeed).loop();
         break;
       case 'healbot':
         new Healbot(creep).loop(Game.flags.HuntersMark);
@@ -245,7 +281,7 @@ for (k = 0, len = ref1.length; k < len; k++) {
           }
         }
         break;
-      case 'upgrader_filler':
+      case !Config.NoUpgrades && 'upgrader_filler':
         new Deliverator(creep, (function() {
           return primarySpawn;
         }), upgraders).loop();
@@ -271,10 +307,8 @@ for (k = 0, len = ref1.length; k < len; k++) {
           new Upgrader(creep).loop();
         }
         break;
-      case 'builder':
-        if (!Config.NoBuilders) {
-          new Builder(creep).loop();
-        }
+      case !Config.NoBuilders && 'builder':
+        new Builder(creep).loop();
         break;
       case 'source2':
         new Deliverator(creep, (function() {
@@ -312,6 +346,9 @@ for (k = 0, len = ref1.length; k < len; k++) {
             return s.structureType !== 'rampart' && s.hits < s.hitsMax;
           }))[0];
         })).loop() : void 0) || (!Config.NoBuilders ? new Builder(creep).loop() : void 0);
+        break;
+      default:
+        console.log("Orphan bot " + creep.name);
     }
   } catch (_error) {
     e = _error;
