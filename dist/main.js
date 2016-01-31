@@ -42,14 +42,14 @@ targetCounts = {
   position_miner4: 1,
   position_miner3_transport: 3,
   position_miner4_transport: 4,
-  position_miner5: 0,
-  position_miner5_transport: 0,
+  position_miner5: 1,
+  position_miner5_transport: 3,
   position_miner6: 0,
   position_miner6_transport: 0,
   tower_filler: 1,
-  repair: !Config.NoRepairs ? 2 : void 0,
-  builder: !Config.NoBuilders ? 2 : void 0,
-  upgrader: !Config.NoUpgrades ? 3 : void 0,
+  repair: !Config.NoRepairs ? 1 : void 0,
+  builder: !Config.NoBuilders ? 1 : void 0,
+  upgrader: !Config.NoUpgrades ? 2 : void 0,
   upgrader_filler: !Config.NoUpgrades ? 2 : void 0,
   guard: 3,
   healbot: 2,
@@ -308,9 +308,7 @@ for (_ in ref1) {
             return primaryTower;
           })).loop();
         } else {
-          if (!Config.NoBuilders) {
-            new Builder(creep).loop();
-          }
+          continue;
         }
         break;
       case !Config.NoUpgrades && 'upgrader_filler':

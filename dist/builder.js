@@ -13,18 +13,17 @@ Builder = (function(superClass) {
   extend(Builder, superClass);
 
   function Builder(creep, sourceFn) {
-    var target;
     if (sourceFn == null) {
       sourceFn = null;
     }
     this.constructionSite = bind(this.constructionSite, this);
     if (Game.flags.BuildHere != null) {
-      target = Game.flags.BuildHere;
+      this.target = Game.flags.BuildHere;
     } else {
-      target = creep;
+      this.target = creep;
     }
     if (sourceFn == null) {
-      this.pathUtils || (this.pathUtils = new PathUtils(target));
+      this.pathUtils || (this.pathUtils = new PathUtils(this.target));
       sourceFn = this.pathUtils.nearestEnergyProvider;
     }
     Builder.__super__.constructor.call(this, creep, sourceFn, this.constructionSite);
@@ -41,7 +40,7 @@ Builder = (function(superClass) {
 
   Builder.prototype.constructionSite = function() {
     var sites;
-    this.pathUtils || (this.pathUtils = new PathUtils(target));
+    this.pathUtils || (this.pathUtils = new PathUtils(this.target));
     sites = this.pathUtils.sortByDistance(this.creep.room.find(FIND_MY_CONSTRUCTION_SITES));
     if (sites.length === 0) {
       sites = this.pathUtils.sortByDistance(this.creep.room.find(FIND_MY_STRUCTURES).filter(this.ramparts));

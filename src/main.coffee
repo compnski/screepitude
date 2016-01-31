@@ -30,15 +30,15 @@ targetCounts =
   position_miner3_transport:3
   position_miner4_transport:4
 
-  position_miner5:0
-  position_miner5_transport:0
+  position_miner5:1
+  position_miner5_transport:3
   position_miner6:0
   position_miner6_transport:0
 
   tower_filler: 1
-  repair: 2 unless Config.NoRepairs
-  builder: 2 unless Config.NoBuilders
-  upgrader: 3 unless Config.NoUpgrades
+  repair: 1 unless Config.NoRepairs
+  builder: 1 unless Config.NoBuilders
+  upgrader: 2 unless Config.NoUpgrades
   upgrader_filler: 2 unless Config.NoUpgrades
   guard: 3
   healbot: 2
@@ -179,7 +179,7 @@ for _, creep of Game.creeps
         if primaryTower.energy < primaryTower.energyCapacity
           new Deliverator(creep, (-> primarySpawn), (-> primaryTower )).loop()
         else
-          (new Builder(creep).loop() unless Config.NoBuilders)
+          continue
       when !Config.NoUpgrades && 'upgrader_filler' then new Deliverator(creep, (-> primaryStorage), upgraders).loop()
       when 'upgrader' then new Upgrader(creep).loop() unless Config.NoUpgrades
       when !Config.NoBuilders && 'builder' then new Builder(creep, -> primaryStorage).loop()

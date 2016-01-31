@@ -93,17 +93,12 @@ Cell = (function() {
           heal: 1,
           move: 3
         });
+      case "builder":
       case "repair":
         return this.makeRole({
-          work: 2,
-          carry: 1,
-          move: 2
-        });
-      case "builder":
-        return this.makeRole({
-          work: 4,
+          work: 8,
           carry: 2,
-          move: 3
+          move: 5
         });
       case "mega_miner":
       case "mega_miner2":
@@ -113,7 +108,7 @@ Cell = (function() {
         return MegaMiner.bodyParts(this).concat([MOVE]);
       case 'upgrade_filler':
         return this.makeRole({
-          carry: 3,
+          carry: 6,
           move: 3
         });
       default:
@@ -189,8 +184,9 @@ Cell = (function() {
       console.log("Can't spawn " + role + " due to other error: " + err + " -- have " + (this.spawnEnergy()) + "/" + partsCost);
       return false;
     } else {
-      return console.log("Spawning " + role + " named " + name + " from " + spawnFrom.name + " with " + parts + " and " + (JSON.stringify(memory)) + ", got " + ret);
+      console.log("Spawning " + role + " named " + name + " from " + spawnFrom.name + " with " + parts + " and " + (JSON.stringify(memory)) + ", got " + ret);
     }
+    return true;
   };
 
   Cell.prototype.loop = function() {

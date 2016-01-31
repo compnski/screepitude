@@ -30,16 +30,14 @@ class Cell
         @makeRole(tough:2, attack:3, move:4)
       when "healbot","healbot_2"
         @makeRole(tough:2, heal:1, move:3)
-      when "repair"
-        @makeRole(work:2, carry:1, move:2)        
-      when "builder"
-        @makeRole(work:4, carry:2, move:3)
+      when "builder", "repair"
+        @makeRole(work:8, carry:2, move:5)
       when "mega_miner", "mega_miner2"
         MegaMiner.bodyParts(@)
       when "room2_mega_miner", "room2_mega_miner2"
         MegaMiner.bodyParts(@).concat([MOVE])
       when 'upgrade_filler'
-        @makeRole(carry:3, move:3)
+        @makeRole(carry:6, move:3)
       else
         if role.startsWith("position_miner")
           if role.indexOf("transport") == -1 # Miner
@@ -90,6 +88,7 @@ class Cell
       return false
     else
       console.log("Spawning #{role} named #{name} from #{spawnFrom.name} with #{parts} and #{JSON.stringify(memory)}, got #{ret}")
+    true
 
   loop: ->
     return if Game.cpu.bucket < 3000
