@@ -42,7 +42,7 @@ targetCounts =
   mega_miner2: 1
   transporter:5
   mega_miner: 1
-  repair: 2
+  repair: 0
   builder: 1
   upgrader: 3
   upgrader_filler: 2
@@ -89,7 +89,7 @@ try
 
   if primaryTower.energy > primaryTower.energyCapacity / 2
     nearestTarget = new PathUtils(primaryTower).sortByDistance(primaryRoom.find(FIND_STRUCTURES).filter((s)-> s.hits < Math.min(s.hitsMax, Config.MaxWallHP)))[0]
-    primaryTower.repair(nearestTarget) if nearestTarget?
+    primaryTower.repair(nearestTarget) if nearestTarget? and primaryTower.pos.getRangeTo(nearestTarget) < 5
 
 catch
   console.log("Caught exception! #{e}")

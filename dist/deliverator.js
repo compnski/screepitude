@@ -83,6 +83,9 @@ Deliverator = (function(superClass) {
       delete this.creep.memory.sourceTarget;
       this.creep.memory.failCount = 0;
     }
+    if (!this.creep.memory.sourceTarget && this.creep.carry.energy > 20) {
+      this.creep.memory.state = 'deliver';
+    }
     return true;
   };
 

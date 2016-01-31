@@ -91,9 +91,9 @@ Cell = (function() {
       case "healbot":
       case "healbot_2":
         return this.makeRole({
-          touch: 3,
-          heal: 2,
-          move: 4
+          tough: 2,
+          heal: 1,
+          move: 3
         });
       case "repair":
         return this.makeRole({

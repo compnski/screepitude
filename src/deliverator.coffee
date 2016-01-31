@@ -41,6 +41,8 @@ class Deliverator extends Agent
     if @creep.memory.failCount > 10
       delete @creep.memory.sourceTarget
       @creep.memory.failCount = 0
+    if !@creep.memory.sourceTarget && @creep.carry.energy > 20
+      @creep.memory.state = 'deliver'
     true
 
   deliver: ->

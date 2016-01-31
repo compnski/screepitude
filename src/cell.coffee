@@ -29,7 +29,7 @@ class Cell
       when "hunter_killer","hunter_killer_2"
         @makeRole(tough:2, attack:3, move:4)
       when "healbot","healbot_2"
-        @makeRole(touch:3, heal:2, move:4)
+        @makeRole(tough:2, heal:1, move:3)
       when "repair"
         @makeRole(work:2, carry:1, move:2)        
       when "builder"
