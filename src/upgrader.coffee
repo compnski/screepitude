@@ -2,7 +2,7 @@ Deliverator = require('deliverator')
 PathUtils = require('path_utils')
 class Upgrader extends Deliverator
   constructor: (creep) ->
-    super(creep, (->), @roomController)
+    super(creep, (-> ), @roomController)
     creep.memory.state = 'deliver' # Always deliver
     creep.memory.energyRequester = true
     #if creep.carry.energy == 0
@@ -13,7 +13,7 @@ class Upgrader extends Deliverator
 
   loop: ->
     super()
-
+    @creep.memory.state = 'deliver' # Always deliver
 
 
 module.exports = Upgrader

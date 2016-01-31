@@ -20,7 +20,8 @@ Upgrader = (function(superClass) {
   };
 
   Upgrader.prototype.loop = function() {
-    return Upgrader.__super__.loop.call(this);
+    Upgrader.__super__.loop.call(this);
+    return this.creep.memory.state = 'deliver';
   };
 
   return Upgrader;
