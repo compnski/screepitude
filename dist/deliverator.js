@@ -68,14 +68,10 @@ Deliverator = (function(superClass) {
     }).call(this);
     moveErr = -1;
     if ((err = this.creep.memory.lastErr = harvestFunc()) === ERR_NOT_IN_RANGE) {
-      if ((moveErr = this.creep.moveTo(target, {
+      if ((moveErr = this.moveTo(target, {
         resusePath: 60
       })) === ERR_NO_PATH) {
         this.creep.memory.failCount++;
-        this.log("Repath");
-        this.creep.moveTo(target, {
-          resusePath: 0
-        });
       }
     } else if (target.renewCreep != null) {
       if (this.creep.ticksToLive < parseInt(Config.CreepRenewEnergy)) {
@@ -145,14 +141,10 @@ Deliverator = (function(superClass) {
     }).call(this);
     moveErr = -1;
     if ((err = this.creep.memory.lastErr = deliverFunc()) === ERR_NOT_IN_RANGE) {
-      if ((moveErr = this.creep.moveTo(target, {
+      if ((moveErr = this.moveTo(target, {
         resusePath: 50
       })) === ERR_NO_PATH) {
         this.creep.memory.failCount++;
-        this.creep.moveTo(target, {
-          resusePath: 0
-        });
-        this.log("Repath!");
       }
     } else if (target.renewCreep != null) {
       if (this.creep.ticksToLive < parseInt(Config.CreepRenewEnergy)) {
@@ -199,13 +191,31 @@ Deliverator = (function(superClass) {
         break;
       case 'deliver':
         ret = this.deliver();
+        break;
+      case 'renew':
+        if (Game.spawns.Spawn1.renewCreep(this.creep) === ERR_NOT_IN_RANGE) {
+          this.creep.moveTo(Game.spawns.Spawn1);
+        }
+        if (this.creep.ticksToLive > Math.min(Config.CreepRenewEnergy * 2, 1400) || Game.spawns.Spawn1.energy === 0) {
+          this.setState('');
+        }
     }
     switch (false) {
-      case !this.fullEnergy():
+      case !(this.fullEnergy() && this.creep.memory.state !== 'renew'):
+        if (this.creep.ticksToLive < Config.CreepRenewEnergy && this.creep.pos.inRangeTo(Game.spawns.Spawn1, 10)) {
+          this.creep.say('renew');
+          this.setState('renew');
+          return ret;
+        }
         this.setState('deliver');
         this.creep.memory.failCount = 0;
         break;
-      case this.creep.carry.energy !== 0:
+      case !(this.creep.carry.energy === 0 && this.creep.memory.state !== 'renew'):
+        if (this.creep.ticksToLive < Config.CreepRenewEnergy && this.creep.pos.inRangeTo(Game.spawns.Spawn1, 10)) {
+          this.creep.say('renew');
+          this.setState('renew');
+          return ret;
+        }
         this.setState('fill');
         this.creep.memory.failCount = 0;
     }

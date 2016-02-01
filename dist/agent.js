@@ -13,6 +13,21 @@ Agent = (function() {
     return this.creep.memory.state = state;
   };
 
+  Agent.prototype.moveTo = function(targetPos) {
+    if (targetPos.pos != null) {
+      targetPos = targetPos.pos;
+    }
+    if (targetPos.roomName !== this.creep.pos.roomName) {
+      return this.creep.moveTo(Game.roomNameToPos[targetPos.roomName], {
+        reusePath: 20
+      });
+    } else {
+      return this.creep.moveTo(targetPos, {
+        resusePath: 10
+      });
+    }
+  };
+
   Agent.prototype.loop = function() {
     var sources;
     if (!this.fullEnergy()) {

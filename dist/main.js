@@ -1,4 +1,4 @@
-var Agent, Builder, Cell, Config, Deliverator, Guard, Healbot, HunterKiller, Mine, PathUtils, PositionMiner, Upgrader, _, a, cell, cellCpu, cpu, cpuByRole, cpuUsed, creep, creepByJob, creepEnergy, e, endCpu, harvestOnly, initCpu, loadCpu, mines, name, name1, nearestEnergyNeed, nearestTarget, primaryRoom, primarySpawn, primaryStorage, primaryTower, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, role, room2, room2Pos, room2mines, room3, room3Pos, startCpu, targetCounts, upgraders;
+var Agent, Builder, Cell, Config, Deliverator, Guard, Healbot, HunterKiller, Mine, PathUtils, PositionMiner, _, a, cell, cellCpu, cpu, cpuByRole, cpuUsed, creep, creepByJob, creepEnergy, e, endCpu, harvestOnly, initCpu, loadCpu, mines, name, name1, nearestEnergyNeed, nearestTarget, primaryRoom, primarySpawn, primaryStorage, primaryTower, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, role, room1Pos, room2, room2Pos, room2mines, room3, room3Pos, roomNameToPos, startCpu, targetCounts, upgraders;
 
 if (Game.cpu.bucket < 1500) {
   Game.notify("CPU LOW!", 20);
@@ -7,13 +7,39 @@ if (Game.cpu.bucket < 1500) {
 
 startCpu = Game.cpu.getUsed();
 
+primarySpawn = Game.spawns.Spawn1;
+
+primaryRoom = primarySpawn.room;
+
+primaryStorage = primaryRoom.find(FIND_MY_STRUCTURES).filter(function(s) {
+  return s.structureType === STRUCTURE_STORAGE;
+})[0];
+
+room1Pos = Game.flags.Room1.pos;
+
+room2 = Game.flags.Room2.room;
+
+room2Pos = Game.flags.Room2.pos;
+
+room3 = Game.flags.Room3.room;
+
+room3Pos = Game.flags.Room3.pos;
+
+roomNameToPos = {};
+
+roomNameToPos[room1Pos.roomName] = room1Pos;
+
+roomNameToPos[room2Pos.roomName] = room2Pos;
+
+roomNameToPos[room3Pos.roomName] = room3Pos;
+
+Game.roomNameToPos = roomNameToPos;
+
 Agent = require('agent');
 
 Mine = require('mine');
 
 Deliverator = require('deliverator');
-
-Upgrader = require('upgrader');
 
 Cell = require('cell');
 
@@ -32,32 +58,34 @@ HunterKiller = require('hunter_killer');
 PositionMiner = require('position_miner');
 
 targetCounts = {
+  small_transporter: 1,
   source1: 0,
   source2: 0,
-  transporter: 2,
+  transporter: 0,
   position_miner1: 1,
-  position_miner1_transport: 2,
+  position_miner1_transport: 1,
   position_miner2: 1,
-  position_miner2_transport: 2,
+  position_miner2_transport: 1,
   position_miner3: 1,
   position_miner4: 1,
-  position_miner3_transport: 3,
-  position_miner4_transport: 4,
+  position_miner3_transport: 2,
+  position_miner4_transport: 2,
+  far_builder: 0,
   position_miner5: 1,
-  position_miner5_transport: 3,
-  position_miner6: 0,
-  position_miner6_transport: 0,
+  position_miner5_transport: 4,
+  position_miner6: 1,
+  position_miner6_transport: 4,
   tower_filler: 1,
+  transporter: 2,
   repair: !Config.NoRepairs ? 1 : void 0,
   builder: !Config.NoBuilders ? 1 : void 0,
   upgrader: !Config.NoUpgrades ? 2 : void 0,
-  upgrader_filler: !Config.NoUpgrades ? 2 : void 0,
+  upgrader_filler: !Config.NoUpgrades ? 0 : void 0,
   guard: 3,
+  hunter_killer: 6,
   healbot: 2,
-  hunter_killer: 2,
-  healbot_2: 2,
   hunter_killer_2: 2,
-  far_builder: 1
+  healbot_2: 2
 };
 
 Array.prototype.sum = function() {
@@ -72,22 +100,6 @@ Array.prototype.sum = function() {
 String.prototype.paddingLeft = function(paddingValue) {
   return String(paddingValue + this).slice(-paddingValue.length);
 };
-
-primarySpawn = Game.spawns.Spawn1;
-
-primaryRoom = primarySpawn.room;
-
-primaryStorage = primaryRoom.find(FIND_MY_STRUCTURES).filter(function(s) {
-  return s.structureType === STRUCTURE_STORAGE;
-})[0];
-
-room2 = Game.flags.Room2.room;
-
-room2Pos = Game.flags.Room2.pos;
-
-room3 = Game.flags.Room3.room;
-
-room3Pos = Game.flags.Room3.pos;
 
 primaryTower = primaryRoom.find(FIND_MY_STRUCTURES).filter(function(s) {
   return s.structureType === 'tower';
@@ -130,9 +142,7 @@ try {
     }
   } else {
     try {
-      if (Game.flags.HuntersMark.pos.roomName !== room2Pos.roomName) {
-        Game.flags.HuntersMark.setPosition(room2Pos);
-      }
+
     } catch (_error) {
       e = _error;
       console.log("failed to move flag");
@@ -184,7 +194,7 @@ cellCpu = Game.cpu.getUsed();
 
 console.log("Cell took " + (cellCpu - initCpu));
 
-if (Game.cpu.buck < 2200 && Game.time % 5 === 0) {
+if (Game.cpu.bucket < 2200 && Game.time % 5 === 0) {
   return;
 }
 
@@ -322,7 +332,11 @@ for (_ in ref1) {
         break;
       case 'upgrader':
         if (!Config.NoUpgrades) {
-          new Upgrader(creep).loop();
+          new Deliverator(creep, (function() {
+            return primarySpawn;
+          }), (function() {
+            return creep.room.controller;
+          })).loop();
         }
         break;
       case !Config.NoBuilders && 'builder':
@@ -331,9 +345,7 @@ for (_ in ref1) {
         })).loop();
         break;
       case !Config.NoBuilders && 'far_builder':
-        new Builder(creep, (function() {
-          return (new PathUtils(creep)).nearestEnergyNeed();
-        }), Game.flags.BuildHere).loop();
+        new Builder(creep, null, Game.flags.BuildHere).loop();
         break;
       case 'source1':
         new Deliverator(creep, (function() {
@@ -350,6 +362,7 @@ for (_ in ref1) {
         })).loop();
         break;
       case 'transporter':
+      case "small_transporter":
         nearestEnergyNeed = function() {
           var targets;
           if (creep.pos.roomName !== primarySpawn.pos.roomName) {

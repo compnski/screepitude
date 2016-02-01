@@ -22,10 +22,10 @@ Guard = (function(superClass) {
   Guard.prototype.loop = function() {
     var err, rally, target;
     target = this.chooseTarget();
-    if ((target != null) && this.creep.pos.getRangeTo(target) > 5) {
+    rally = Game.flags.Flag1;
+    if ((target != null) && rally.pos.getRangeTo(target) > 5) {
       target = null;
     }
-    rally = Game.flags.Flag1;
     if ((target == null) && !this.creep.pos.inRangeTo(rally, 2)) {
       this.creep.moveTo(rally);
       return;

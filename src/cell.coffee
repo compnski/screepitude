@@ -16,10 +16,12 @@ class Cell
 
   partsForRole: (role) ->
     switch role
+      when "small_transporter"
+        @makeRole(carry:2, move:1)
       when "source1", "source2"
-        @makeRole(work: 2, carry: 1, move: 2)
+        @makeRole(work: 1, carry: 1, move: 1)
       when "upgrader"
-        @makeRole(work: 7, carry: 2, move: 2)
+        @makeRole(work: 8, carry: 2, move: 5)
       when "transporter"
         @makeRole(carry: 6, move: 3)
       when "room2_transporter"
@@ -27,9 +29,9 @@ class Cell
       when "guard"
         @makeRole(tough:3, move:2, attack:3)
       when "hunter_killer","hunter_killer_2"
-        @makeRole(tough:2, attack:3, move:4)
+        @makeRole(tough:10, move:3, attack:4)
       when "healbot","healbot_2"
-        @makeRole(tough:2, heal:1, move:3)
+        @makeRole(tough:10, heal:1, move:3)
       when "builder", "repair"
         @makeRole(work:6, carry:4, move:5)
       when "far_builder"
@@ -94,20 +96,22 @@ class Cell
 
   loop: ->
     spawn = Game.spawns.Spawn1
-    return if Game.cpu.bucket < 2000
+    return if Game.cpu.bucket < 1500
     return if spawn.spawning
     creepCount = {}
     numCreeps = 0
     for _, creep of Game.creeps
-      continue if creep.ticksToLive < 100
+      continue if creep.ticksToLive < 150
       creepCount[creep.memory.role] ||= 0
       creepCount[creep.memory.role]++ 
       numCreeps++
 
     if numCreeps < 5
       Game.notify("EMERGENCY: CreepCount low: #{JSON.stringify(creepCount)}")
-      targetCounts['source1'] = 2
-      targetCounts['source2'] = 2
+      @targetCounts['small_transporter'] = 1
+      @targetCounts['source1'] = 2
+      @targetCounts['source2'] = 2
+
 
     console.log("\n")
     console.log(JSON.stringify(creepCount))

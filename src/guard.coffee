@@ -7,9 +7,8 @@ class Guard extends Agent
 
   loop: ->
     target = @chooseTarget()
-    target = null if target? && @creep.pos.getRangeTo(target) > 5
-
     rally = Game.flags.Flag1
+    target = null if target? && rally.pos.getRangeTo(target) > 5
     if !target? && !@creep.pos.inRangeTo(rally,2)
       @creep.moveTo(rally)
       return

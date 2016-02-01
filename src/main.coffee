@@ -3,10 +3,29 @@ if Game.cpu.bucket < 1500
   return
 startCpu = Game.cpu.getUsed()
 
+
+
+
+primarySpawn = Game.spawns.Spawn1
+primaryRoom = primarySpawn.room
+primaryStorage = primaryRoom.find(FIND_MY_STRUCTURES).filter((s)->s.structureType == STRUCTURE_STORAGE)[0]
+room1Pos = Game.flags.Room1.pos
+room2 = Game.flags.Room2.room
+room2Pos = Game.flags.Room2.pos
+room3 = Game.flags.Room3.room
+room3Pos = Game.flags.Room3.pos
+
+roomNameToPos = {}
+roomNameToPos[room1Pos.roomName] = room1Pos
+roomNameToPos[room2Pos.roomName] = room2Pos
+roomNameToPos[room3Pos.roomName] = room3Pos
+
+Game.roomNameToPos = roomNameToPos
+
 Agent = require('agent')
 Mine = require('mine')
 Deliverator = require('deliverator')
-Upgrader = require('upgrader')
+#Upgrader = require('upgrader')
 Cell = require('cell')
 Builder = require('builder')
 Guard = require('guard')
@@ -24,35 +43,37 @@ PositionMiner = require('position_miner')
 # Creates a set of roles based on tasks
 
 targetCounts = 
+  small_transporter: 1
   source1: 0
   source2: 0
-  transporter:2
+  transporter:0
   position_miner1:1
-  position_miner1_transport:2
+  position_miner1_transport:1
   position_miner2:1
-  position_miner2_transport:2
+  position_miner2_transport:1
 
   position_miner3:1
   position_miner4:1
-  position_miner3_transport:3
-  position_miner4_transport:4
+  position_miner3_transport:2
+  position_miner4_transport:2
+  far_builder: 0
 
   position_miner5:1
-  position_miner5_transport:3
-  position_miner6:0
-  position_miner6_transport:0
+  position_miner5_transport:4
+  position_miner6:1
+  position_miner6_transport:4
 
   tower_filler: 1
+  transporter:2
   repair: 1 unless Config.NoRepairs
   builder: 1 unless Config.NoBuilders
   upgrader: 2 unless Config.NoUpgrades
-  upgrader_filler: 2 unless Config.NoUpgrades
+  upgrader_filler: 0 unless Config.NoUpgrades
   guard: 3
+  hunter_killer:6
   healbot: 2
-  hunter_killer:2
-  healbot_2: 2
   hunter_killer_2:2
-  far_builder: 1
+  healbot_2: 2
 
 
 Array.prototype.sum = ->
@@ -61,14 +82,6 @@ Array.prototype.sum = ->
 
 String.prototype.paddingLeft = (paddingValue) ->
    return String(paddingValue + this).slice(-paddingValue.length)
-
-primarySpawn = Game.spawns.Spawn1
-primaryRoom = primarySpawn.room
-primaryStorage = primaryRoom.find(FIND_MY_STRUCTURES).filter((s)->s.structureType == STRUCTURE_STORAGE)[0]
-room2 = Game.flags.Room2.room
-room2Pos = Game.flags.Room2.pos
-room3 = Game.flags.Room3.room
-room3Pos = Game.flags.Room3.pos
 
 primaryTower = primaryRoom.find(FIND_MY_STRUCTURES).filter((s)->s.structureType == 'tower')[0]
 
@@ -95,8 +108,8 @@ try
   else
     # PEACE
     try
-      if Game.flags.HuntersMark.pos.roomName != room2Pos.roomName
-        Game.flags.HuntersMark.setPosition(room2Pos)
+      #if Game.flags.HuntersMark.pos.roomName != room2Pos.roomName
+      #  Game.flags.HuntersMark.setPosition(room2Pos)
     catch e
       console.log("failed to move flag")
       Game.notify("Failed to move flag!", 20)
@@ -135,7 +148,7 @@ catch e
 
 cellCpu = Game.cpu.getUsed()
 console.log("Cell took #{cellCpu - initCpu}")
-return if Game.cpu.buck < 2200 && Game.time % 5 == 0
+return if Game.cpu.bucket < 2200 && Game.time % 5 == 0
 
 upgraders = ->
   u = primaryRoom.find(FIND_MY_CREEPS).filter((c)->c.memory.role == 'upgrader')
@@ -188,13 +201,13 @@ for _, creep of Game.creeps
           #new Builder(creep, -> primaryStorage).loop()
           continue
       when !Config.NoUpgrades && 'upgrader_filler' then new Deliverator(creep, (-> primaryStorage), upgraders).loop()
-      when 'upgrader' then new Upgrader(creep).loop() unless Config.NoUpgrades
+      when 'upgrader' then new Deliverator(creep, (->primarySpawn), (-> creep.room.controller)).loop() unless Config.NoUpgrades
       when !Config.NoBuilders && 'builder' then new Builder(creep, (-> primaryStorage)).loop()
-      when !Config.NoBuilders && 'far_builder' then new Builder(creep, (-> (new PathUtils(creep)).nearestEnergyNeed()), Game.flags.BuildHere).loop()
+      when !Config.NoBuilders && 'far_builder' then new Builder(creep, null, Game.flags.BuildHere).loop()
 
       when 'source1' then new Deliverator(creep, (-> primaryRoom.find(FIND_SOURCES)[0]), (-> (new PathUtils(creep)).nearestEnergyNeed() )).loop()
       when 'source2' then new Deliverator(creep, (-> primaryRoom.find(FIND_SOURCES)[1]), (-> (new PathUtils(creep)).nearestEnergyNeed() )).loop()
-      when 'transporter' 
+      when 'transporter' , "small_transporter"
         nearestEnergyNeed = ->
           if creep.pos.roomName != primarySpawn.pos.roomName
             # Return to primary spawn if not there

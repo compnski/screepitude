@@ -7,6 +7,14 @@ class Agent
   setState: (state) ->
     @creep.memory.state = state
 
+
+  moveTo: (targetPos) ->
+    targetPos = targetPos.pos if targetPos.pos?
+    if targetPos.roomName != @creep.pos.roomName
+      return @creep.moveTo(Game.roomNameToPos[targetPos.roomName], {reusePath: 20})
+    else
+      return @creep.moveTo(targetPos, {resusePath: 10})
+
   loop: ->
     if !@fullEnergy()
       sources = @creep.room.find(FIND_SOURCES)

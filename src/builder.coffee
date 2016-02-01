@@ -33,7 +33,7 @@ class Builder extends Deliverator
     if sites.length == 0
       sites = @pathUtils.sortByDistance(@creep.room.find(FIND_STRUCTURES).filter(@walls))
     if sites.length == 0
-      sites = [@creep.room.controller]
+      sites = [@creep.room.controller] if @creep.room.controller.owner.username == "omgbear"
     sites[0]
 
 module.exports = Builder

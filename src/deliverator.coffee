@@ -31,10 +31,8 @@ class Deliverator extends Agent
 
     moveErr = -1
     if (err = @creep.memory.lastErr = harvestFunc()) == ERR_NOT_IN_RANGE
-      if (moveErr = @creep.moveTo(target,{resusePath:60})) == ERR_NO_PATH
+      if (moveErr = @moveTo(target,{resusePath:60})) == ERR_NO_PATH
         @creep.memory.failCount++
-        @log("Repath")
-        @creep.moveTo(target,{resusePath:0})
     else if target.renewCreep?
       target.renewCreep(@creep) if @creep.ticksToLive < parseInt(Config.CreepRenewEnergy)
     if moveErr == 0
@@ -71,10 +69,8 @@ class Deliverator extends Agent
 
     moveErr = -1
     if (err = @creep.memory.lastErr = deliverFunc()) == ERR_NOT_IN_RANGE
-      if (moveErr = @creep.moveTo(target, resusePath:50)) == ERR_NO_PATH
+      if (moveErr = @moveTo(target, resusePath:50)) == ERR_NO_PATH
         @creep.memory.failCount++
-        @creep.moveTo(target,{resusePath:0})
-        @log("Repath!")
     else if target.renewCreep?
       target.renewCreep(@creep) if @creep.ticksToLive < parseInt(Config.CreepRenewEnergy)
     if moveErr == 0
@@ -109,11 +105,24 @@ class Deliverator extends Agent
     switch @creep.memory.state
       when 'fill' then ret = @fill()
       when 'deliver' then ret = @deliver()
+      when 'renew'
+        if Game.spawns.Spawn1.renewCreep(@creep) == ERR_NOT_IN_RANGE
+          @creep.moveTo(Game.spawns.Spawn1)
+        if @creep.ticksToLive > Math.min(Config.CreepRenewEnergy * 2, 1400) || Game.spawns.Spawn1.energy == 0
+          @setState('')
     switch
-      when @fullEnergy()
+      when @fullEnergy() && @creep.memory.state != 'renew'
+        if @creep.ticksToLive < Config.CreepRenewEnergy && @creep.pos.inRangeTo(Game.spawns.Spawn1,10)
+          @creep.say('renew')
+          @setState('renew')
+          return ret
         @setState('deliver')
         @creep.memory.failCount = 0
-      when @creep.carry.energy == 0
+      when @creep.carry.energy == 0  && @creep.memory.state != 'renew'
+        if @creep.ticksToLive < Config.CreepRenewEnergy && @creep.pos.inRangeTo(Game.spawns.Spawn1,10)
+          @creep.say('renew')
+          @setState('renew')
+          return ret
         @setState('fill')
         @creep.memory.failCount = 0
     return ret

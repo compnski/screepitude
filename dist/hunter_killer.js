@@ -16,6 +16,11 @@ HunterKiller = (function(superClass) {
   HunterKiller.prototype.chooseTarget = function() {
     var target, targets;
     targets = new PathUtils(this.creep).sortByDistance(this.creep.room.find(FIND_HOSTILE_CREEPS).concat(this.creep.room.find(FIND_HOSTILE_SPAWNS)));
+    if (targets.length === 0 && this.creep.memory.role === 'hunter_killer_2') {
+      targets = new PathUtils(this.creep).sortByDistance(this.creep.room.find(FIND_STRUCTURES).filter(function(s) {
+        return s.structureType === STRUCTURE_WALL;
+      }));
+    }
     target = targets[0];
     if (target == null) {
       return;
@@ -28,6 +33,9 @@ HunterKiller = (function(superClass) {
     var err;
     rally || (rally = Game.flags.Flag1);
     target || (target = this.chooseTarget());
+    if ((target != null) && rally.pos.getRangeTo(target) > 5) {
+      target = null;
+    }
     if ((target == null) && !this.creep.pos.inRangeTo(rally, 3)) {
       this.creep.moveTo(rally);
       return;

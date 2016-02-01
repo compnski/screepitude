@@ -3,9 +3,9 @@ var Cell, MegaMiner;
 MegaMiner = require('mega_miner');
 
 Cell = (function() {
-  function Cell(room, targetCounts1) {
+  function Cell(room, targetCounts) {
     this.room = room;
-    this.targetCounts = targetCounts1;
+    this.targetCounts = targetCounts;
   }
 
   Cell.prototype.nameForRole = function(role) {
@@ -50,18 +50,23 @@ Cell = (function() {
 
   Cell.prototype.partsForRole = function(role) {
     switch (role) {
+      case "small_transporter":
+        return this.makeRole({
+          carry: 2,
+          move: 1
+        });
       case "source1":
       case "source2":
         return this.makeRole({
-          work: 2,
+          work: 1,
           carry: 1,
-          move: 2
+          move: 1
         });
       case "upgrader":
         return this.makeRole({
-          work: 7,
+          work: 8,
           carry: 2,
-          move: 2
+          move: 5
         });
       case "transporter":
         return this.makeRole({
@@ -82,14 +87,14 @@ Cell = (function() {
       case "hunter_killer":
       case "hunter_killer_2":
         return this.makeRole({
-          tough: 2,
-          attack: 3,
-          move: 4
+          tough: 10,
+          move: 3,
+          attack: 4
         });
       case "healbot":
       case "healbot_2":
         return this.makeRole({
-          tough: 2,
+          tough: 10,
           heal: 1,
           move: 3
         });
@@ -198,7 +203,7 @@ Cell = (function() {
   Cell.prototype.loop = function() {
     var _, creep, creepCount, name1, numCreeps, ref, ref1, results, role, spawn, targetCount;
     spawn = Game.spawns.Spawn1;
-    if (Game.cpu.bucket < 2000) {
+    if (Game.cpu.bucket < 1500) {
       return;
     }
     if (spawn.spawning) {
@@ -209,7 +214,7 @@ Cell = (function() {
     ref = Game.creeps;
     for (_ in ref) {
       creep = ref[_];
-      if (creep.ticksToLive < 100) {
+      if (creep.ticksToLive < 150) {
         continue;
       }
       creepCount[name1 = creep.memory.role] || (creepCount[name1] = 0);
@@ -218,8 +223,9 @@ Cell = (function() {
     }
     if (numCreeps < 5) {
       Game.notify("EMERGENCY: CreepCount low: " + (JSON.stringify(creepCount)));
-      targetCounts['source1'] = 2;
-      targetCounts['source2'] = 2;
+      this.targetCounts['small_transporter'] = 1;
+      this.targetCounts['source1'] = 2;
+      this.targetCounts['source2'] = 2;
     }
     console.log("\n");
     console.log(JSON.stringify(creepCount));
