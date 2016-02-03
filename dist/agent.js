@@ -13,17 +13,25 @@ Agent = (function() {
     return this.creep.memory.state = state;
   };
 
-  Agent.prototype.moveTo = function(targetPos) {
+  Agent.prototype.moveTo = function(targetPos, ignoreCreeps) {
+    if (ignoreCreeps == null) {
+      ignoreCreeps = true;
+    }
     if (targetPos.pos != null) {
       targetPos = targetPos.pos;
     }
+    ignoreCreeps = false;
     if (targetPos.roomName !== this.creep.pos.roomName) {
       return this.creep.moveTo(Game.roomNameToPos[targetPos.roomName], {
-        reusePath: 20
+        reusePath: 10,
+        ignoreCreeps: ignoreCreeps,
+        maxOps: 1000
       });
     } else {
       return this.creep.moveTo(targetPos, {
-        resusePath: 10
+        resusePath: 20,
+        ignoreCreeps: ignoreCreeps,
+        maxOps: 1000
       });
     }
   };

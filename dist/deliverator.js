@@ -29,9 +29,9 @@ Deliverator = (function(superClass) {
   }
 
   Deliverator.prototype.fill = function() {
-    var err, harvestFunc, moveErr, ref, target;
-    target = Game.getObjectById((ref = this.creep.memory.sourceTarget) != null ? ref.id : void 0);
-    if (!target) {
+    var err, harvestFunc, moveErr, target;
+    target = Game.getObjectById(this.creep.memory.sourceId);
+    if (target == null) {
       target = this.sourceFn();
       if (target != null) {
         this.creep.say("-> " + (target.name || target.structureType || target.id));
@@ -40,9 +40,13 @@ Deliverator = (function(superClass) {
         this.log("fill from " + (target.name || target.structureType || target.id || target.constructor));
       }
     }
-    this.creep.memory.sourceTarget = target;
     if (target == null) {
       return false;
+    }
+    this.creep.memory.sourceId = target.id;
+    if (!this.creep.pos.isNearTo(target)) {
+      this.moveTo(target);
+      return;
     }
     harvestFunc = (function() {
       switch (false) {
@@ -73,31 +77,24 @@ Deliverator = (function(superClass) {
       })) === ERR_NO_PATH) {
         this.creep.memory.failCount++;
       }
-    } else if (target.renewCreep != null) {
-      if (this.creep.ticksToLive < parseInt(Config.CreepRenewEnergy)) {
-        target.renewCreep(this.creep);
-      }
-    }
-    if (moveErr === 0) {
-      return;
     }
     if (err < 0 && err !== ERR_NOT_IN_RANGE && err !== ERR_NOT_ENOUGH_RESOURCES) {
       this.creep.memory.failCount++;
     }
     if (this.creep.memory.failCount > 10) {
-      delete this.creep.memory.sourceTarget;
+      delete this.creep.memory.sourceId;
       this.creep.memory.failCount = 0;
       this.log('fill fail');
     }
-    if (!this.creep.memory.sourceTarget && this.creep.carry.energy > 20) {
+    if (!this.creep.memory.sourceId && this.creep.carry.energy > 20) {
       this.creep.memory.state = 'deliver';
     }
     return true;
   };
 
   Deliverator.prototype.deliver = function() {
-    var deliverFunc, err, moveErr, ref, target;
-    target = Game.getObjectById((ref = this.creep.memory.deliverTarget) != null ? ref.id : void 0);
+    var deliverFunc, err, moveErr, target;
+    target = Game.getObjectById(this.creep.memory.deliverId);
     if (!target) {
       target || (target = this.targetFn());
       if (target != null) {
@@ -107,9 +104,15 @@ Deliverator = (function(superClass) {
         this.log("deliver to " + (target.name || target.structureType || target.constructor) + " " + this.creep.memory.failCount);
       }
     }
-    this.creep.memory.deliverTarget = target;
     if (target == null) {
       return false;
+    }
+    this.creep.memory.deliverId = target.id;
+    if (!this.creep.pos.isNearTo(target)) {
+      this.moveTo(target, {
+        resusePath: 60
+      });
+      return;
     }
     deliverFunc = (function() {
       switch (false) {
@@ -155,7 +158,7 @@ Deliverator = (function(superClass) {
       return;
     }
     if (err === -8) {
-      delete this.creep.memory.deliverTarget;
+      delete this.creep.memory.deliverId;
     }
     if (err < 0 && err !== ERR_NOT_IN_RANGE) {
       this.log(err);
@@ -163,11 +166,11 @@ Deliverator = (function(superClass) {
     }
     if (this.creep.memory.failCount > 10) {
       this.log('deliver fail');
-      delete this.creep.memory.deliverTarget;
+      delete this.creep.memory.deliverId;
       this.creep.memory.failCount = 0;
     }
     if (this.creep.memory.role === 'repair' && target.hits >= Math.min(target.hitsMax, Config.MaxWallHP)) {
-      delete this.creep.memory.deliverTarget;
+      delete this.creep.memory.deliverId;
       this.creep.memory.failCount = 0;
     }
     return true;
@@ -175,6 +178,9 @@ Deliverator = (function(superClass) {
 
   Deliverator.prototype.loop = function() {
     var e;
+    if (this.creep.fatigue > 0) {
+      return;
+    }
     try {
       return this.loopAction();
     } catch (_error) {
@@ -193,6 +199,8 @@ Deliverator = (function(superClass) {
         ret = this.deliver();
         break;
       case 'renew':
+        this.setState('deliver');
+        return;
         if (Game.spawns.Spawn1.renewCreep(this.creep) === ERR_NOT_IN_RANGE) {
           this.creep.moveTo(Game.spawns.Spawn1);
         }
@@ -201,23 +209,15 @@ Deliverator = (function(superClass) {
         }
     }
     switch (false) {
-      case !(this.fullEnergy() && this.creep.memory.state !== 'renew'):
-        if (this.creep.ticksToLive < Config.CreepRenewEnergy && this.creep.pos.inRangeTo(Game.spawns.Spawn1, 10)) {
-          this.creep.say('renew');
-          this.setState('renew');
-          return ret;
-        }
+      case !this.fullEnergy():
+        delete this.creep.memory.sourceId;
         this.setState('deliver');
         this.creep.memory.failCount = 0;
         break;
-      case !(this.creep.carry.energy === 0 && this.creep.memory.state !== 'renew'):
-        if (this.creep.ticksToLive < Config.CreepRenewEnergy && this.creep.pos.inRangeTo(Game.spawns.Spawn1, 10)) {
-          this.creep.say('renew');
-          this.setState('renew');
-          return ret;
-        }
+      case this.creep.carry.energy !== 0:
         this.setState('fill');
         this.creep.memory.failCount = 0;
+        delete this.creep.memory.deliverId;
     }
     return ret;
   };

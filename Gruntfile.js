@@ -2,6 +2,7 @@ module.exports = function(grunt) {
  
     grunt.loadNpmTasks('grunt-contrib-coffee');
     grunt.loadNpmTasks('grunt-screeps');
+    grunt.loadNpmTasks('grunt-contrib-uglify');
 
     grunt.initConfig({
         "pkg": grunt.file.readJSON('package.json'),
@@ -30,6 +31,19 @@ module.exports = function(grunt) {
                 dest: 'dist',
                 ext: ".js"
             }
+        },
+        uglify: {
+          ugly: {
+            options: {
+              screwIE8: true,
+              sourceMap: true,
+              sourceMapIncludeSources: true,
+              //sourceMapIn: 'dist/*.js.map', // input sourcemap from a previous compilation
+            },
+            files: {
+              'min/main.js': ['dist/*.js'],
+            },
+          },
         }
     });
     grunt.registerTask('default', ['coffee']);

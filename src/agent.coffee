@@ -7,13 +7,13 @@ class Agent
   setState: (state) ->
     @creep.memory.state = state
 
-
-  moveTo: (targetPos) ->
+  moveTo: (targetPos, ignoreCreeps=true) ->
     targetPos = targetPos.pos if targetPos.pos?
+    ignoreCreeps = false#@creep.name.indexOf("position_miner") != -1
     if targetPos.roomName != @creep.pos.roomName
-      return @creep.moveTo(Game.roomNameToPos[targetPos.roomName], {reusePath: 20})
+      return @creep.moveTo(Game.roomNameToPos[targetPos.roomName], {reusePath: 10, ignoreCreeps: ignoreCreeps, maxOps: 1000})
     else
-      return @creep.moveTo(targetPos, {resusePath: 10})
+      return @creep.moveTo(targetPos, {resusePath: 20, ignoreCreeps: ignoreCreeps, maxOps: 1000})
 
   loop: ->
     if !@fullEnergy()

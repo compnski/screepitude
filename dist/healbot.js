@@ -22,15 +22,20 @@ Healbot = (function(superClass) {
   };
 
   Healbot.prototype.loop = function(rally) {
-    var err, target;
+    var target;
     target = this.chooseTarget();
     rally || (rally = Game.flags.Flag1);
-    if ((target == null) && !this.creep.pos.inRangeTo(rally, 3)) {
-      this.creep.moveTo(rally);
+    if (target == null) {
+      this.moveTo(rally);
       return;
     }
-    if ((err = this.creep.heal(target)) === ERR_NOT_IN_RANGE) {
-      return this.creep.moveTo(target);
+    if (this.target) {
+      this.moveTo(this.target);
+      if (this.creep.pos.isNearTo(target)) {
+        return this.creep.heal(target);
+      } else {
+        return this.creep.rangedHeal(target);
+      }
     }
   };
 

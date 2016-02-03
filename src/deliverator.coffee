@@ -14,13 +14,18 @@ class Deliverator extends Agent
   fill: ->
     # Fill from target structure, renew if structure is a spawn
     #delete @creep.memory.sourceTarget
-    target = Game.getObjectById(@creep.memory.sourceTarget?.id)
-    if !target
+    target = Game.getObjectById(@creep.memory.sourceId)
+    if !target?
       target = @sourceFn()
       @creep.say("-> #{target.name || target.structureType || target.id}") if target?
       @log("fill from #{target.name || target.structureType || target.id || target.constructor}") if target?
-    @creep.memory.sourceTarget = target
     return false unless target?
+    @creep.memory.sourceId = target.id
+
+    if !@creep.pos.isNearTo(target)
+      @moveTo(target)
+      return
+
     harvestFunc = switch
       when target.structureType == STRUCTURE_SPAWN || target.structureType == STRUCTURE_EXTENSION
         => target.transferEnergy(@creep)
@@ -33,30 +38,30 @@ class Deliverator extends Agent
     if (err = @creep.memory.lastErr = harvestFunc()) == ERR_NOT_IN_RANGE
       if (moveErr = @moveTo(target,{resusePath:60})) == ERR_NO_PATH
         @creep.memory.failCount++
-    else if target.renewCreep?
-      target.renewCreep(@creep) if @creep.ticksToLive < parseInt(Config.CreepRenewEnergy)
-    if moveErr == 0
-      return
     if err < 0 && err != ERR_NOT_IN_RANGE && err != ERR_NOT_ENOUGH_RESOURCES
       @creep.memory.failCount++
     #if target?.carryCapacity > 0 && target?.carry?.energy == 0
     #  @creep.memory.failCount++
     if @creep.memory.failCount > 10
-      delete @creep.memory.sourceTarget
+      delete @creep.memory.sourceId
       @creep.memory.failCount = 0
       @log('fill fail')
-    if !@creep.memory.sourceTarget && @creep.carry.energy > 20
+    if !@creep.memory.sourceId && @creep.carry.energy > 20
       @creep.memory.state = 'deliver'
     true
 
   deliver: ->
-    target = Game.getObjectById(@creep.memory.deliverTarget?.id)
+    target = Game.getObjectById(@creep.memory.deliverId)
     if !target
       target ||= @targetFn()
       @creep.say("<- #{shortName(target)}") if target?
       @log("deliver to #{target.name || target.structureType || target.constructor} #{@creep.memory.failCount}") if target?
-    @creep.memory.deliverTarget = target
     return false unless target?
+    @creep.memory.deliverId = target.id
+    if !@creep.pos.isNearTo(target)
+      @moveTo(target,{resusePath:60})
+      return
+
     deliverFunc = switch
       when target.structureType == STRUCTURE_CONTROLLER
          => @creep.upgradeController(target)
@@ -76,26 +81,26 @@ class Deliverator extends Agent
     if moveErr == 0
       return
     if err == -8
-      delete @creep.memory.deliverTarget
+      delete @creep.memory.deliverId
     if err < 0 && err != ERR_NOT_IN_RANGE
       @log(err)
       @creep.memory.failCount++
     #if @creep.pos.x == @creep.memory.lastPos?.x && @creep.pos.y == @creep.memory.lastPos?.y
     #  @creep.memory.failCount++
     #@creep.memory.lastPos = @creep.pos
-
     if @creep.memory.failCount > 10
       @log('deliver fail')
-      delete @creep.memory.deliverTarget
+      delete @creep.memory.deliverId
       @creep.memory.failCount = 0
     if @creep.memory.role == 'repair' and target.hits >= Math.min(target.hitsMax, Config.MaxWallHP)
-      delete @creep.memory.deliverTarget
+      delete @creep.memory.deliverId
       @creep.memory.failCount = 0
 
     true
 
 
   loop: -> 
+    return if @creep.fatigue > 0
     try
       @loopAction()
     catch e
@@ -106,25 +111,29 @@ class Deliverator extends Agent
       when 'fill' then ret = @fill()
       when 'deliver' then ret = @deliver()
       when 'renew'
+        @setState('deliver')
+        return
         if Game.spawns.Spawn1.renewCreep(@creep) == ERR_NOT_IN_RANGE
           @creep.moveTo(Game.spawns.Spawn1)
         if @creep.ticksToLive > Math.min(Config.CreepRenewEnergy * 2, 1400) || Game.spawns.Spawn1.energy == 0
           @setState('')
     switch
-      when @fullEnergy() && @creep.memory.state != 'renew'
-        if @creep.ticksToLive < Config.CreepRenewEnergy && @creep.pos.inRangeTo(Game.spawns.Spawn1,10)
-          @creep.say('renew')
-          @setState('renew')
-          return ret
+      when @fullEnergy()# && @creep.memory.state != 'renew'
+        #if @creep.ticksToLive < Config.CreepRenewEnergy && @creep.pos.inRangeTo(Game.spawns.Spawn1,10)
+          #@creep.say('renew')
+          #@setState('renew')
+          #return ret
+        delete @creep.memory.sourceId
         @setState('deliver')
         @creep.memory.failCount = 0
-      when @creep.carry.energy == 0  && @creep.memory.state != 'renew'
-        if @creep.ticksToLive < Config.CreepRenewEnergy && @creep.pos.inRangeTo(Game.spawns.Spawn1,10)
-          @creep.say('renew')
-          @setState('renew')
-          return ret
+      when @creep.carry.energy == 0#  && @creep.memory.state != 'renew'
+        #if @creep.ticksToLive < Config.CreepRenewEnergy && @creep.pos.inRangeTo(Game.spawns.Spawn1,10)
+        #  @creep.say('renew')
+        #  @setState('renew')
+        #  return ret
         @setState('fill')
         @creep.memory.failCount = 0
+        delete @creep.memory.deliverId
     return ret
 
 module.exports = Deliverator

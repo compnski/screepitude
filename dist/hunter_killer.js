@@ -13,15 +13,12 @@ HunterKiller = (function(superClass) {
     return HunterKiller.__super__.constructor.apply(this, arguments);
   }
 
-  HunterKiller.prototype.chooseTarget = function() {
+  HunterKiller.prototype.chooseTarget = function(rally) {
     var target, targets;
-    targets = new PathUtils(this.creep).sortByDistance(this.creep.room.find(FIND_HOSTILE_CREEPS).concat(this.creep.room.find(FIND_HOSTILE_SPAWNS)));
-    if (targets.length === 0 && this.creep.memory.role === 'hunter_killer_2') {
-      targets = new PathUtils(this.creep).sortByDistance(this.creep.room.find(FIND_STRUCTURES).filter(function(s) {
-        return s.structureType === STRUCTURE_WALL;
-      }));
-    }
+    targets = [];
+    targets = new PathUtils(rally).sortByDistance(this.creep.room.find(FIND_HOSTILE_CREEPS).concat(this.creep.room.find(FIND_HOSTILE_SPAWNS)));
     target = targets[0];
+    console.log(target);
     if (target == null) {
       return;
     }
@@ -32,16 +29,20 @@ HunterKiller = (function(superClass) {
   HunterKiller.prototype.loop = function(rally, target) {
     var err;
     rally || (rally = Game.flags.Flag1);
-    target || (target = this.chooseTarget());
-    if ((target != null) && rally.pos.getRangeTo(target) > 5) {
+    target || (target = this.chooseTarget(rally));
+    if ((target != null) && rally.pos.getRangeTo(target) > 15) {
       target = null;
     }
     if ((target == null) && !this.creep.pos.inRangeTo(rally, 3)) {
-      this.creep.moveTo(rally);
+      this.creep.moveTo(rally, {
+        ignoreDestructible: true
+      });
       return;
     }
     if ((err = this.creep.attack(target)) === ERR_NOT_IN_RANGE) {
-      return this.creep.moveTo(target);
+      return this.creep.moveTo(target, {
+        ignoreDestructible: true
+      });
     }
   };
 

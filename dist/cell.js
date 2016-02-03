@@ -64,9 +64,9 @@ Cell = (function() {
         });
       case "upgrader":
         return this.makeRole({
-          work: 8,
+          work: 10,
           carry: 2,
-          move: 5
+          move: 6
         });
       case "transporter":
         return this.makeRole({
@@ -88,7 +88,7 @@ Cell = (function() {
       case "hunter_killer_2":
         return this.makeRole({
           tough: 10,
-          move: 3,
+          move: 6,
           attack: 4
         });
       case "healbot":
@@ -125,11 +125,11 @@ Cell = (function() {
       default:
         if (role.startsWith("position_miner")) {
           if (role.indexOf("transport") === -1) {
-            return MegaMiner.bodyParts(this).concat([MOVE]);
+            return MegaMiner.bodyParts(this).concat([MOVE, MOVE]);
           } else {
             return this.makeRole({
               carry: 12,
-              move: 6
+              move: 10
             });
           }
         } else {

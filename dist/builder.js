@@ -57,11 +57,6 @@ Builder = (function(superClass) {
     if (sites.length === 0) {
       sites = this.pathUtils.sortByDistance(this.creep.room.find(FIND_STRUCTURES).filter(this.walls));
     }
-    if (sites.length === 0) {
-      if (this.creep.room.controller.owner.username === "omgbear") {
-        sites = [this.creep.room.controller];
-      }
-    }
     return sites[0];
   };
 

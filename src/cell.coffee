@@ -21,7 +21,7 @@ class Cell
       when "source1", "source2"
         @makeRole(work: 1, carry: 1, move: 1)
       when "upgrader"
-        @makeRole(work: 8, carry: 2, move: 5)
+        @makeRole(work: 10, carry: 2, move: 6)
       when "transporter"
         @makeRole(carry: 6, move: 3)
       when "room2_transporter"
@@ -29,7 +29,7 @@ class Cell
       when "guard"
         @makeRole(tough:3, move:2, attack:3)
       when "hunter_killer","hunter_killer_2"
-        @makeRole(tough:10, move:3, attack:4)
+        @makeRole(tough:10, move:6, attack:4)
       when "healbot","healbot_2"
         @makeRole(tough:10, heal:1, move:3)
       when "builder", "repair"
@@ -45,9 +45,9 @@ class Cell
       else
         if role.startsWith("position_miner")
           if role.indexOf("transport") == -1 # Miner
-            MegaMiner.bodyParts(@).concat([MOVE])    
+            MegaMiner.bodyParts(@).concat([MOVE, MOVE])
           else # Transporter
-            @makeRole(carry: 12, move: 6)
+            @makeRole(carry: 12, move: 10)
         else
           [WORK, CARRY, MOVE]
 

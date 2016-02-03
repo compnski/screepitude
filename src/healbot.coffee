@@ -8,10 +8,14 @@ class Healbot extends Agent
   loop: (rally) ->
     target = @chooseTarget()
     rally ||= Game.flags.Flag1
-    if !target? && !@creep.pos.inRangeTo(rally,3)
-      @creep.moveTo(rally)
+    if !target? #&& !@creep.pos.inRangeTo(rally,3)
+      @moveTo(rally)
       return
-    if ((err = @creep.heal(target)) == ERR_NOT_IN_RANGE)
-      @creep.moveTo(target)
+    if @target
+      @moveTo(@target)
+      if @creep.pos.isNearTo(target)
+        @creep.heal(target)
+      else
+        @creep.rangedHeal(target)
 
 module.exports = Healbot
