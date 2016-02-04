@@ -1,6 +1,4 @@
-var Agent, Config, PathUtils;
-
-PathUtils = require('path_utils');
+var Agent, Config;
 
 Config = require('config');
 
@@ -13,26 +11,20 @@ Agent = (function() {
     return this.creep.memory.state = state;
   };
 
-  Agent.prototype.moveTo = function(targetPos, ignoreCreeps) {
-    if (ignoreCreeps == null) {
-      ignoreCreeps = true;
+  Agent.prototype.moveTo = function(targetPos, opts) {
+    if (opts == null) {
+      opts = {};
     }
     if (targetPos.pos != null) {
       targetPos = targetPos.pos;
     }
-    ignoreCreeps = false;
+    opts.maxOps || (opts.maxOps = 1000);
     if (targetPos.roomName !== this.creep.pos.roomName) {
-      return this.creep.moveTo(Game.roomNameToPos[targetPos.roomName], {
-        reusePath: 10,
-        ignoreCreeps: ignoreCreeps,
-        maxOps: 1000
-      });
+      opts.reusePath || (opts.reusePath = 10);
+      return this.creep.moveTo(targetPos, opts);
     } else {
-      return this.creep.moveTo(targetPos, {
-        resusePath: 20,
-        ignoreCreeps: ignoreCreeps,
-        maxOps: 1000
-      });
+      opts.reusePath || (opts.reusePath = 20);
+      return this.creep.moveTo(targetPos, opts);
     }
   };
 

@@ -20,10 +20,10 @@ shortName = function(target) {
 Deliverator = (function(superClass) {
   extend(Deliverator, superClass);
 
-  function Deliverator(creep, sourceFn, targetFn) {
+  function Deliverator(creep, source, target1) {
     var base;
-    this.sourceFn = sourceFn;
-    this.targetFn = targetFn;
+    this.source = source;
+    this.target = target1;
     Deliverator.__super__.constructor.call(this, creep);
     (base = this.creep.memory).state || (base.state = 'fill');
   }
@@ -32,7 +32,7 @@ Deliverator = (function(superClass) {
     var err, harvestFunc, moveErr, target;
     target = Game.getObjectById(this.creep.memory.sourceId);
     if (target == null) {
-      target = this.sourceFn();
+      target = this.source;
       if (target != null) {
         this.creep.say("-> " + (target.name || target.structureType || target.id));
       }
@@ -50,7 +50,7 @@ Deliverator = (function(superClass) {
     }
     harvestFunc = (function() {
       switch (false) {
-        case !(target.structureType === STRUCTURE_SPAWN || target.structureType === STRUCTURE_EXTENSION):
+        case !(target.structureType === STRUCTURE_SPAWN || target.structureType === STRUCTURE_EXTENSION || target.structure === STRUCTURE_STORAGE):
           return (function(_this) {
             return function() {
               return target.transferEnergy(_this.creep);
@@ -71,7 +71,7 @@ Deliverator = (function(superClass) {
       }
     }).call(this);
     moveErr = -1;
-    if ((err = this.creep.memory.lastErr = harvestFunc()) === ERR_NOT_IN_RANGE) {
+    if ((err = harvestFunc()) === ERR_NOT_IN_RANGE) {
       if ((moveErr = this.moveTo(target, {
         resusePath: 60
       })) === ERR_NO_PATH) {
@@ -92,11 +92,15 @@ Deliverator = (function(superClass) {
     return true;
   };
 
+  Deliverator.prototype.stillValid = function(target) {
+    return target && target.energyCapacity > 0 && target.energy !== target.energyCapacity;
+  };
+
   Deliverator.prototype.deliver = function() {
     var deliverFunc, err, moveErr, target;
     target = Game.getObjectById(this.creep.memory.deliverId);
-    if (!target) {
-      target || (target = this.targetFn());
+    if (!target || !this.stillValid(target)) {
+      target || (target = this.target);
       if (target != null) {
         this.creep.say("<- " + (shortName(target)));
       }
@@ -143,7 +147,7 @@ Deliverator = (function(superClass) {
       }
     }).call(this);
     moveErr = -1;
-    if ((err = this.creep.memory.lastErr = deliverFunc()) === ERR_NOT_IN_RANGE) {
+    if ((err = deliverFunc()) === ERR_NOT_IN_RANGE) {
       if ((moveErr = this.moveTo(target, {
         resusePath: 50
       })) === ERR_NO_PATH) {
@@ -209,6 +213,9 @@ Deliverator = (function(superClass) {
         }
     }
     switch (false) {
+      case this.creep.memory.state !== 'renew':
+        'nothing';
+        break;
       case !this.fullEnergy():
         delete this.creep.memory.sourceId;
         this.setState('deliver');

@@ -4,7 +4,7 @@ module.exports = {
   NoUpgrades: false,
   NoRepairs: false,
   NoBuilders: false,
-  MaxWallHP: 40000
+  MaxWallHP: 80000
 };
 
 //# sourceMappingURL=config.js.map

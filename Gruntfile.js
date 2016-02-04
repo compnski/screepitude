@@ -31,7 +31,7 @@ module.exports = function(grunt) {
                 dest: 'v2_out',
                 ext: ".js"
             },
-            "coffee_to_js": {
+            "v0": {
                 "options": {
                   bare: true,
                   sourceMap: true
@@ -40,7 +40,7 @@ module.exports = function(grunt) {
                 flatten: true,
                 cwd: "src",
                 src: ["**/*.coffee"],
-                dest: 'dist',
+                dest: 'v0_out',
                 ext: ".js"
             }
         },
