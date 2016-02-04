@@ -15,10 +15,22 @@ module.exports = function(grunt) {
                 ptr: false
             },
             dist: {
-                src: ['dist/*.js']
+                src: ['v2_out/*.js']
             }
-        },
+        },        
         "coffee": {
+            "v2": {
+                "options": {
+                  bare: true,
+                  sourceMap: true
+                },
+                expand: true,
+                flatten: true,
+                cwd: "v2",
+                src: ["**/*.coffee"],
+                dest: 'v2_out',
+                ext: ".js"
+            },
             "coffee_to_js": {
                 "options": {
                   bare: true,
@@ -41,10 +53,10 @@ module.exports = function(grunt) {
               //sourceMapIn: 'dist/*.js.map', // input sourcemap from a previous compilation
             },
             files: {
-              'min/main.js': ['dist/*.js'],
+              'dist/main.js': ['v2_out/*.js'],
             },
           },
         }
     });
-    grunt.registerTask('default', ['coffee']);
+    grunt.registerTask('default', ['coffee:v2', 'screeps']);
 }
