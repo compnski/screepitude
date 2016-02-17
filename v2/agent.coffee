@@ -8,14 +8,15 @@ class Agent
     @creep.memory.state = state
 
   moveTo: (targetPos, opts={}) ->
-    targetPos = targetPos.pos if targetPos.pos?
-    opts.maxOps ||= 1000
-    if targetPos.roomName != @creep.pos.roomName
-      opts.reusePath ||= 10
-      return @creep.moveTo(targetPos, opts)
-    else
-      opts.reusePath ||= 20
-      return @creep.moveTo(targetPos, opts)
+    Game.wp.move(@creep, -> targetPos)
+    # targetPos = targetPos.pos if targetPos.pos?
+    # opts.maxOps ||= 1000
+    # if targetPos.roomName != @creep.pos.roomName
+    #   opts.reusePath ||= 10
+    #   return @creep.moveTo(targetPos, opts)
+    # else
+    #   opts.reusePath ||= 20
+    #   return @creep.moveTo(targetPos, opts)
 
   loop: ->
     if !@fullEnergy()

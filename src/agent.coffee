@@ -11,7 +11,7 @@ class Agent
     targetPos = targetPos.pos if targetPos.pos?
     ignoreCreeps = false#@creep.name.indexOf("position_miner") != -1
     if targetPos.roomName != @creep.pos.roomName
-      return @creep.moveTo(Game.roomNameToPos[targetPos.roomName], {reusePath: 10, ignoreCreeps: ignoreCreeps, maxOps: 1000})
+      return @creep.moveTo(Game.roomNameToPos[targetPos.roomName], {reusePath: 30, ignoreCreeps: ignoreCreeps, maxOps: 1000})
     else
       return @creep.moveTo(targetPos, {resusePath: 20, ignoreCreeps: ignoreCreeps, maxOps: 1000})
 

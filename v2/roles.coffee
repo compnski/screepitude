@@ -2,12 +2,7 @@ PathUtils = require('path_utils')
 Deliverator = require('deliverator')
 Config = require('config')
 Tasks = require ('tasks')
-
-isAlly = (username) ->
-  ['omgbear', 'ganz', 'fezeral', 'scorps'].indexOf() > -1
-
-isEnemy = (username) ->
-  !isAlly(username)
+Utils = require('utils')
 
 t1 = Game.cpu.getUsed()
 primarySpawn = Game.spawns.Spawn1
@@ -15,8 +10,8 @@ primaryRoom = primarySpawn.room
 primaryRoom.my_structures = primaryRoom.find(FIND_MY_STRUCTURES)
 primaryRoom.my_creeps = primaryRoom.find(FIND_MY_CREEPS)
 primaryRoom.hostile_creeps = primaryRoom.find(FIND_HOSTILE_CREEPS)
-primaryStorage = primaryRoom.my_structures.filter((s)->s.structureType == STRUCTURE_STORAGE)[0]
-
+primaryTower = primaryRoom.my_structures.filter((s)->s.structureType == STRUCTURE_TOWER)[0] 
+primaryStorage = primaryRoom.my_structures.filter((s)->s.structureType == STRUCTURE_STORAGE)[0] ||  primarySpawn
 
 
 TaskCounts = {}
@@ -28,339 +23,230 @@ Creeps = {}
 for name, creep of Game.creeps
   Creeps[creep.roleName()] = creep.id
 
-Utils = {}
 
-Utils.CarryStuff = (creep, from, to) ->
-  # if arg is function, then call it. passing in the creep
-  new Deliverator(creep, from, to).loop()
-Utils.primarySpawnOrExtension = ->
-  # TODO: Cache
-  primaryRoom.my_structures.filter((c) -> 
-    (c.structureType == 'extension' || c.structureType == 'spawn') && c.energy < c.energyCapacity)
+DIRECTIONS = [TOP,
+  TOP_RIGHT,
+  RIGHT,
+  BOTTOM_RIGHT,
+  BOTTOM,
+  BOTTOM_LEFT,
+  LEFT,
+  TOP_LEFT]
 
-Utils.nearestPrimarySpawnOrExtension = (creep) ->
-  targets = new PathUtils(creep).sortByDistance(Utils.primarySpawnOrExtension())
-  targets[0]
-
-Utils.nearestTowerSpawnExtension = (creep) ->
-  targets = primaryRoom.my_structures.filter((c) -> 
-    (c.structureType == 'tower') && c.energy < c.energyCapacity)
-  if targets.length == 0
-    targets = Utils.primarySpawnOrExtension()
-  targets = new PathUtils(creep).sortByDistance(targets)
-  targets[0]
-
-Utils.energyProviders = (creep) ->
-  s = creep.room.find(FIND_MY_CREEPS).filter((c)->c.carryCapacity > 200 && c.carry.energy > 100)
-  s.push(primaryStorage)
-  s
-
-Utils.mineFlagByIndex = (creep) ->
-  MineFlags[creep.index() % MineFlags.length-1]
-
-Utils.guardFlagByIndex = (creep) ->
-  GuardFlags[creep.index() % GuardFlags.length-1]
-
-Utils.Repair = (creep, source) ->
-  new Deliverator(creep, source,new PathUtils(creep).sortByDistance(primaryRoom.my_structures.filter(
-    (s)->s.structureType != 'rampart' && s.hits < Math.min(s.hitsMax, Config.MaxWallHP)))[0]).loop()
-
-Utils.BuildThings = (creep) ->
-  new Builder(creep, null, Game.flags.BuildHere).loop()
-
-Utils.HealFlag = (creep, rally, leash_distance=5) ->
-  rally ||= Game.flags.HuntersMark2
-  if !creep.pos.inRangeTo(rally,leash_distance + 3)
-    return creep.moveTo(rally.pos, {ignoreDestructibleStructures:true, maxOps: 1000})
-
-  room = creep.room
-  room.friendly_creeps ?= room.find(FIND_MY_CREEPS)
-
-
-  pathUtils = new PathUtils(creep)
-  nearestTarget = pathUtils.sortByDistance(room.friendly_creeps.filter((c)->c.hits<c.hitsMax))[0]
-  nearestTarget = null if nearestTarget? && rally.pos.getRangeTo(nearestTarget) > leash_distance
-
-  if nearestTarget?
-    if creep.rangedHeal(nearestTarget) == ERR_NOT_IN_RANGE
-      creep.moveTo(nearestTarget)
-  else
-    creep.moveTo(rally.pos)
-
-Utils.GuardFlag = (creep, rally, leash_distance=5) ->
-  rally ||= Game.flags.HuntersMark2
-  if !creep.pos.inRangeTo(rally,leash_distance)
-    creep.log("Too far")
-    return creep.moveTo(rally.pos)
-
-  room = creep.room
-  room.hostile_creeps ?= room.find(FIND_HOSTILE_CREEPS)
-  #console.log JSON.stringify(room.hostile_creeps[0].body)
-
-  nearestTarget = null
-  pathUtils = new PathUtils(creep)
-  #nearestTarget = pathUtils.sortByDistance(room.hostile_creeps.filter((c)->c.body.filter((b)->b.type==HEAL && b.hits)).length > 0) [0]
-  #nearestTarget ||= pathUtils.sortByDistance(room.hostile_creeps.filter((c)->c.body.filter((b)->b.type==RANGED_ATTACK && b.hits)).length > 0)[0]
-  nearestTarget ||= pathUtils.sortByDistance(room.hostile_creeps)[0]
-  
-  nearestTarget = null if nearestTarget? && rally.pos.getRangeTo(nearestTarget) > leash_distance
-
-  if nearestTarget?
-    console.log("Nearing in on #{nearestTarget.id} at #{creep.pos.getRangeTo(nearestTarget)}")
-    attacked = true
-    if creep.body.filter((p)->p.type == ATTACK && p.hits > 0).length > 0 && isEnemy(nearestTarget.owner.username)
-      if ((err = creep.attack(nearestTarget)) == ERR_NOT_IN_RANGE)
-        creep.moveTo(nearestTarget)
-
-    if creep.body.filter((p)->p.type == RANGED_ATTACK && p.hits > 0).length > 0 && isEnemy(nearestTarget.owner.username)
-      if ((err = creep.rangedAttack(nearestTarget)) == ERR_NOT_IN_RANGE)
-        creep.moveTo(nearestTarget)
-  else
-    creep.moveTo(rally.pos)
+wiggle = (creep) ->
+  creep.log 'wiggle!'
+  creep.move(DIRECTIONS[parseInt(Math.random()*DIRECTIONS.length)])
 
 
 
-  # target = new PathUtils(creep).sortByDistance(creep.room.find(FIND_HOSTILE_CREEPS))[0]
-  # target = null if target? && rally.pos.getRangeTo(target) > leash_distance
-  # if !target? && !creep.pos.inRangeTo(rally,2)
-  #   return creep.moveTo(rally.pos, {ignoreDestructibleStructures:true, maxOps: 1000})
+moveTo = (creep, to, opts={}) ->
+  return 0 if creep.fatigue > 0
+  opts["maxOps"] = 1000
 
-  # if !creep.pos.isNearTo(target)
-  #   return creep.moveTo(rally.pos, {ignoreDestructibleStructures:true, maxOps: 1000})
+  #console.log Game.wp.getPath(creep.pos, to)
 
-  #  console.log creep.body.filter((p)->p.type == ATTACK && p.hits > 0).length, isEnemy(target.owner.username)
+  #to = to.pos if to.pos?
+  #if to.pos.roomName != creep.pos.roomName
+  #  to = Game.roomNameToPos[to.roomName]
 
-  # if creep.body.filter((p)->p.type == ATTACK && p.hits > 0).length > 0 && isEnemy(target.owner.username)
-  #   if ((err = creep.attack(target)) == ERR_NOT_IN_RANGE)
-  #     creep.moveTo(target)
-  # if creep.body.filter((p)->p.type == ATTACK && p.hits > 0).length > 0 && isAlly(target.owner.username)
-  #   if ((err = creep.heal(target)) == ERR_NOT_IN_RANGE)
-  #     creep.moveTo(target)
-  # else if err < 0
-  #   console.log "Attack error #{err}"
+  err = creep.moveTo(to, opts)
+  creep.log err if err < 0
+  if err == -2
+    opts["reusePath"] = 30
+    opts["maxOps"] = 3000
+    opts["ignoreCreeps"] = true
+    if creep.moveTo(to, opts) == -2
+      if creep.pos.roomName != to.pos.roomName
+        creep.log "going to the next room", Game.map.findExit(creep.pos.roomName, to.pos.roomName)
+        creep.log JSON.stringify(to)
+        creep.move(Game.map.findExit(creep.pos.roomName, to.pos.roomName))
+      else
+        creep.log "HELPPpppppppppppp"
+  0
 
-Utils.minerByIndex = (index) ->
-  index = index % TaskCounts["miner"]
-  return Game.getObjectById(Creeps["miner_#{index}"])
+class Roles
 
+  @Piler: (creep) ->
+    creep.memory.role = 'piler'
 
-GuardFlags = [
-  Game.flags.HuntersMark2
-]
+  @Upgrade: (creep, targetFlag) ->
+    # if !creep.pos.inRangeTo(targetFlag, 15)
+    #   Game.wp.move(creep, -> targetFlag)
+    #   return
+    for _, s of Game.spawns
+      if targetFlag.pos.roomName == s.pos.roomName
+        if s.energy < 200# && !Creep["small_transporter_0_0"]
+          Roles.Deliver(creep, Utils.nearestEnergyProvider(creep), s)
+          return
 
-MineFlags = [
-  Game.flags.Mine_1_1,
-  Game.flags.Mine_1_2,
-  Game.flags.Mine_3_1,
-  Game.flags.Mine_3_2,
-  Game.flags.Mine_4_1,
-]
+    Roles.Deliver(creep, Utils.nearestEnergyProvider(creep), targetFlag.room.controller)
 
-Utils.FlagMiner = (creep) -> 
-  return if creep.carry.energy == creep.carryCapacity
-  index = creep.index()
-  targetFlag = MineFlags[index % MineFlags.length]
+  @Repair: (creep, targetFlag) ->
+    if Game.flags.RepairHere? and Game.flags.RepairHere.color != 'red'
+      sourcePos = Game.flags.RepairHere.pos
+    else 
+      if Game.flags.BuildHere? and Game.flags.BuildHere.color == 'green'
+        return if Roles.Build(creep, targetFlag)
 
-  if targetFlag.pos.roomName != creep.pos.roomName
-    err = creep.moveTo(targetFlag.pos, {reusePath:40, ignoreCreeps:false, maxOps:1000})
-    console.log("flag miner error = #{err}") if err != 0
-    return
-  if !creep.memory.sourceId
-    creep.memory.sourceId = new PathUtils(targetFlag.pos).sortByDistance(targetFlag.room.find(FIND_SOURCES))[0].id
-  if creep.memory.sourceId
-    source = Game.getObjectById(creep.memory.sourceId)
-  if !creep.pos.isNearTo(source.pos)
-    creep.moveTo(source, {reusePath:10})
-  if creep.harvest(source) == -7
-    delete creep.memory.sourceId
+      sourcePos = creep.pos
 
-Utils.MineTransporter = (creep, dumpLocation) ->
-  source = Utils.minerByIndex(creep.index())
-  new Deliverator(creep, source, dumpLocation).loop() if source?
+    target = Game.getObjectById(creep.memory.repairTargetId) unless Game.flags.ClearTarget?.color == 'red'
+    target = null if target and target.hits == target.hitsMax
+    target ?= sourcePos.findClosestByPath(FIND_STRUCTURES, {filter: (s)-> Utils.needsRepair(s) && (Utils.ownedByMe(s) || s.structureType == STRUCTURE_WALL || s.structureType == s.ROAD) })
+    creep.memory.repairTargetId = target.id if target
+    return if target and Roles.Deliver(creep, Utils.nearestEnergyProvider(creep), target)
+    return if Roles.Build(creep, targetFlag)
+    return if Roles.Upgrade(creep, targetFlag)
+    moveTo(creep, Game.flags.WP1)
 
-# If target has an id, get the id, otherwise it's a string so leave it as is. 
-# TBD, if a function, find a way to serialize it
-serializeArg = (arg) ->
-  return {'id': arg.id} if arg.id?
-  return {'function': arg} if typeof(Utils[arg.function]) == 'function'
-  return arg 
+  @Build: (creep, targetFlag=null) ->
+    targetFlag ||= Game.flags.BuildHere
+    if targetFlag? and targetFlag.color != 'red'
+        sourcePos = targetFlag
+      else 
+        sourcePos = creep
+    if sourcePos.pos.roomName != creep.pos.roomName
+      return Game.wp.move(creep, -> sourcePos)
 
-resolveArgs = (creep) ->
-  return (arg) ->
-    return Game.getObjectById(arg.id) if arg.id?
-    return Utils[arg.function](creep) if arg.function? and typeof(Utils[arg.function]) == 'function'
+    target = Game.getObjectById(creep.memory.buildTargetId) unless Game.flags.ClearTarget?.color == 'red'
+    target ?= sourcePos.pos.findClosestByPath(FIND_MY_CONSTRUCTION_SITES)
+    creep.memory.buildTargetId = target.id if target
+    if target
+      return Roles.Deliver(creep, Utils.nearestEnergyProvider(creep), target)
 
-    return Utils[arg](creep) if arg? and typeof(Utils[arg]) == 'function'
-    return arg.function if arg.function?
-    arg
-
-class Role
-  run: (realStartCpu) ->
-    startCpu = Game.cpu.getUsed()
-    for _, spawn of Game.spawns
-      storage = spawn.room.find(FIND_MY_STRUCTURES).filter((s)->s.structureType == STRUCTURE_STORAGE)[0]
-      towerEnergy = @runTowers(spawn.room)
-      #towerCpu = Game.cpu.getUsed()
-      @runSpawner(spawn)
-      #spawnCpu = Game.cpu.getUsed()
-      creepEnergy = (creep.carry.energy for creep in spawn.room.find(FIND_MY_CREEPS)).sum()
-      console.log(" Spawn: #{@spawnEnergy(spawn.room)}/#{@spawnEnergyCapacity(spawn.room)}\tTower: #{towerEnergy}\tCreep: #{creepEnergy}\tStore: #{storage.store.energy}\t")
-    roomCpu = Game.cpu.getUsed()
-    @runCreeps()
-    endCpu = Game.cpu.getUsed()
-    console.log("Time total: #{endCpu - realStartCpu}\t\t Load: #{startCpu - realStartCpu}\t\tCode: #{endCpu - startCpu}\t\tBase: #{roomCpu - startCpu}\t\t Creep: #{endCpu - roomCpu}\t\tCPU Bucket: #{Game.cpu.bucket}")
-
-  runSpawner: (spawn) ->
-    if spawn.spawning
-      console.log("Spawning #{JSON.stringify(spawn.spawning)}")
-    curCreepCount = {}
-    for t in Tasks
-      start = curCreepCount[t.role] || 0
-      for idx in [start..(start+t.count-1)]
-        roleName = "#{t.role}_#{idx}"
-        creepId = Creeps[roleName]
-        if !creepId? # || creep.ticksToLive < 200
-          if !spawn.spawning
-            return if @spawnCreepFromTask(spawn, roleName, t)
-        else
-          creep = Game.getObjectById(creepId)
-          continue if creep.memory.action?
-          creep.memory = Memory[creep.name] ||= {}
-          creep.memory.action = t.action
-          creep.memory.roleName = roleName
-          creep.memory.args = t.args
-      curCreepCount[t.role] = start + idx
-
-  runTowers: (room) ->
-    energy = 0
-    for tower in tower = room.my_structures.filter((s)->s.structureType == 'tower')
-      pathUtils = new PathUtils(tower)
-      nearestTarget = pathUtils.sortByDistance(room.hostile_creeps.filter((c)->c.body.indexOf(HEAL) > -1))[0]
-      nearestTarget ||= pathUtils.sortByDistance(room.hostile_creeps.filter((c)->c.body.indexOf(RANGED_ATTACK) > -1))[0]
-      nearestTarget ||= pathUtils.sortByDistance(room.hostile_creeps)[0]
-
-      if nearestTarget?
-        attacked = true
-        tower.attack(nearestTarget) 
-
-      if !attacked and tower.energy > tower.energyCapacity / 2
-        nearestTarget = pathUtils.sortByDistance(room.my_creeps.filter((c)->c.hits < c.hitsMax))
-        tower.heal(nearestTarget) if nearestTarget?
-
-        nearestTarget = pathUtils.sortByDistance(room.my_structures.filter((s)-> s.hits < Math.min(s.hitsMax, Config.MaxWallHP)))[0]
-        unless nearestTarget?
-          nearestTarget = pathUtils.sortByDistance(room.find(FIND_STRUCTURES).filter((s)-> s.structureType == STRUCTURE_ROAD && s.hits < Math.min(s.hitsMax, Config.MaxWallHP)))[0]
-        tower.repair(nearestTarget) if nearestTarget? #and tower.pos.getRangeTo(nearestTarget) < 5
-      energy += tower.energy
-
-    return energy
-
-
-  runCreeps: ->
-    for _, creepId of Creeps
-      creep = Game.getObjectById(creepId)
-      try
-        @runCreep(creep)
-      catch e
-        creep.log(creep)
-        creep.log(e.stack)
-        creep.log("Error running creeps #{creep.role}_#{creep.index}")
-
-  spawnCreepFromTask: (spawnFrom, roleName, task) ->
-    room = spawnFrom.room
-    name = @nameForRole(roleName)
-    parts = @makeRole(task.body)
-    memory = {'action': task.action, args: task.args.map(serializeArg), roleName: roleName}
-    partsCost = @partsCost(parts)
-    if partsCost > @spawnEnergyCapacity(room)
-      console.log("Can't spawn #{roleName} due to max capacity -- have #{@spawnEnergyCapacity(room)}/#{partsCost}")
-      Game.notify("Can't spawn #{roleName} due to max capacity -- have #{@spawnEnergyCapacity(room)}/#{partsCost}",60)
-      return false
-      console.log "Would spawn creep #{name} with #{memory} and #{parts}"
-    ret = 0
-    ret = spawnFrom.createCreep(parts, name, memory)
-    if ret == ERR_NOT_ENOUGH_RESOURCES
-      console.log("Can't spawn #{roleName} due to resources -- have #{@spawnEnergy(room)}/#{partsCost}")
-      return true
-    else if ret < 0
-      console.log("Can't spawn #{roleName} due to other error: #{ret} -- have #{@spawnEnergy(room)}/#{partsCost}")
-      room.memory.totalCreepCounts[roleName]++ if ret == -3
-      return false
-    else
-      room.memory.totalCreepCounts[roleName]++ if ret == 0
-      console.log("Spawning #{roleName} named #{name} from #{spawnFrom.name} with #{parts} and #{JSON.stringify(memory)}, got #{ret}")
+  @Deliver: (creep, from, to) ->
+    new Deliverator(creep, from, to).loop()
     true
 
-  runCreep: (creep) ->
-    action = creep.memory.action
-    if action? and Utils[action]?
-      return Utils[action](creep, creep.memory.args.map(resolveArgs(creep))...)
+  @ClaimBot: (creep, targetFlag) ->
+    if (targetFlag.room?.controller?.owner and targetFlag.room.controller.owner.username == creep.owner.username)
+      return @FlagMiner(creep, targetFlag, targetFlag.room.controller)
+
+    if targetFlag.pos.roomName != creep.pos.roomName || !creep.pos.inRangeTo(targetFlag, 5)
+      err = Game.wp.move(creep, ->targetFlag)
+      return
+    if creep.pos.inRangeTo(targetFlag, 2)
+      # Don't imprint unti lyou get close enough
+      if !creep.memory.controllerId
+        creep.memory.controllerId = targetFlag.room.controller.id if targetFlag.room?.controller?
     else
-      creep.log("Failed to run action for #{creep.name} - action = #{creep.action}, memory = #{JSON.stringify(creep.memory)}")
+      Game.wp.move(creep, ->targetFlag)
+      return
 
-  partsCost: (parts) ->
-    parts.map((s)->
-      switch s
-        when TOUGH then 10
-        when MOVE, CARRY then 50
-        when ATTACK then 80
-        when WORK then 100
-        when RANGED_ATTACK then 150
-        when HEAL then 250
-      ).sum()
+    if creep.memory.controllerId
+      controller = Game.getObjectById(creep.memory.controllerId)
 
-  makeRole: (partsMap) ->
-      parts = []
-      for part, count of partsMap
-          for i in [0...count]
-              parts.push(part)
-      return parts
-
-  nameForRole: (roleName) ->
-    Memory.totalCreepCounts ||= {}
-    Memory.totalCreepCounts[roleName] ||= 0
-    return "#{roleName}_#{Memory.totalCreepCounts[roleName]}"
-
-  spawnEnergyCapacity: (room) ->
-    (s.energyCapacity for s in room.find(FIND_MY_STRUCTURES) when s.structureType == 'extension' || s.structureType == "spawn").sum()
-
-  spawnEnergy: (room) ->
-    (s.energy for s in room.find(FIND_MY_STRUCTURES) when s.structureType == 'extension' || s.structureType == "spawn").sum()
-
-class Builder extends Deliverator
-  constructor: (@creep, sourceFn=null, rallyFlag=null) ->
-    if rallyFlag?
-      @target = rallyFlag
+    if !creep.pos.isNearTo(controller)
+      Game.wp.move(creep, -> controller)
     else
-      @target = creep
+      if targetFlag.name.indexOf("Claim") > -1
+        creep.claimController(controller)
+      else
+        creep.reserveController(controller)
+
+
+  @FlagMiner: (creep, targetFlag, targetDump) -> 
+    if creep.carry.energy == creep.carryCapacity
+      targetDump ||= primaryStorage
+      return Roles.Deliver(creep, null, targetDump)
+  
+    index = creep.index()
+    targetFlag ?= Config.MineFlags[index % Config.MineFlags.length]
+
+    if targetFlag.pos.roomName != creep.pos.roomName || !creep.pos.inRangeTo(targetFlag, 5)
+      err = Game.wp.move(creep, -> targetFlag)
+      creep.log("flag miner error = #{err}") if err != 0
+      return
+
+    if creep.pos.inRangeTo(targetFlag, 2)
+      # Don't imporint unti lyou get close enough
+      if !creep.memory.sourceId
+        creep.memory.sourceId = new PathUtils(targetFlag).sortByDistance(targetFlag.room.find(FIND_SOURCES))[0].id
+    else
+      Game.wp.move(creep, -> targetFlag)
+      return
+
+    if creep.memory.sourceId
+      source = Game.getObjectById(creep.memory.sourceId)
+
+    if !creep.pos.isNearTo(source)
+      Game.wp.move(creep, ->source)
+
+    target = targetFlag.pos.findClosestByPath(FIND_DROPPED_ENERGY)
+    if creep.pickup(creep.pos.findClosestByPath(FIND_DROPPED_ENERGY)) == 0
+      return
+
+
+    err = creep.harvest(source)
+    if [-2, -7].indexOf(err) > -1
+      delete creep.memory.sourceId
+
+  @MegaMiner: (creep, targetFlag) ->
+    if !creep.pos.inRangeTo(targetFlag, 5)
+      Game.wp.move(creep, -> targetFlag)
+      return
+    if !creep.memory.sourceId
+      creep.memory.sourceId = targetFlag.pos.findClosestByPath(FIND_SOURCES).id
+    if creep.memory.sourceId
+      source = Game.getObjectById(creep.memory.sourceId)
+
+    if !creep.pos.isNearTo(source)
+      Game.wp.move(creep, -> source)
+
+    err = creep.harvest(source)
+    if [-2, -7].indexOf(err) > -1
+      delete creep.memory.sourceId
+
+  @Invade: (creep, targetFlag) ->
+    if targetFlag.pos.roomName != creep.pos.roomName || !creep.pos.inRangeTo(targetFlag.pos, 5)
+      err = moveTo(creep, targetFlag, {reusePath:40, ignoreCreeps:true})
+      creep.log "Move error", err if err < 0
+      return
+
+    findTargetCreep = (creep, pos) ->
+      if creep.canHeal()
+        target = creep.pos.findClosestByPath(FIND_MY_CREEPS, {fitler: (c) -> c.hits < c.hitsMax/2  })
+        target ?= creep.pos.findClosestByPath(FIND_MY_CREEPS, {fitler: (c) -> c.hits < c.hitsMax  })
+      if creep.canAttack() || creep.canShoot()
+        target = creep.pos.findClosestByPath(FIND_HOSTILE_CREEPS, {fitler: (c) -> c.canAttack() || c.canHeal() || c.canShoot() })
+        target ?= creep.pos.findClosestByPath(FIND_HOSTILE_SPAWNS, {fitler: (c) -> c.canAttack() || c.canHeal() || c.canShoot() })
+        target ?= creep.pos.findClosestByPath(FIND_HOSTILE_STRUCTURES) #, {fitler: (c) -> c.canAttack() || c.canHeal() || c.canShoot() })
+        target ?= creep.pos.findClosestByPath(FIND_STRUCTURES, {fitler: (c) -> c.structureType == STRUCTURE_WALL })
+        # TODO: Prefer healers / ranged attacked, based on some heuristic
+
+
+    target = findTargetCreep(creep, targetFlag.pos)
+    if !target
+      return creep.moveTo(targetFlag)
+
+    if creep.canShoot() and creep.pos.inRangeTo(target, 3)
+      # don't move
+    else
+      creep.moveTo(target, {ignoreDestructibleStructures:true})
+
+    if creep.canHeal() and Utils.isAlly(target)
+      if creep.pos.isNearTo(target.pos)
+        creep.heal(target)
+      else
+        creep.rangedHeal(target)
+
+    if creep.canAttack() and Utils.isEnemy(target)
+      if creep.pos.isNearTo(target.pos)
+        creep.attack(target)
+    if creep.canShoot() and Utils.isEnemy(target)
+      creep.rangedAttack(target)
+
+  @MineTransporter = (creep, targetFlag, targetDump=null) ->
+    if creep.carry.energy == creep.carryCapacity
+      targetDump ||= primaryStorage
+      return Roles.Deliver(creep, null, targetDump)
+
+    target = targetFlag.pos.findClosestByRange(FIND_DROPPED_ENERGY)
+    return unless target
+    if creep.pos.isNearTo(target)
+      creep.pickup(target)
+    else
+      Game.wp.move(creep, -> target)
     
-    unless sourceFn?
-      @pathUtils ||= new PathUtils(@target)
-      source = @pathUtils.sortByDistance(Utils.energyProviders(creep))[0]
-      console.log source
-    super(creep, source, @constructionSite())
-    creep.memory.energyRequester = true
-
-  ramparts: (s) ->
-    (s.structureType == 'rampart') && (s.hits < Math.min(Config.MaxWallHP, s.hitsMax))
-
-  walls: (s) ->
-    s.structureType == 'constructedWall' && s.hits < Math.min(s.hitsMax, (Config.MaxWallHP || 3000000))
-
-  constructionSite: =>
-    @pathUtils ||= new PathUtils(@target)
-    sites = @pathUtils.sortByDistance(@creep.room.find(FIND_MY_CONSTRUCTION_SITES))
-    if sites.length == 0# && @creep.memory.role == 'far_builder'
-      sites = []
-      sites = sites.concat(Game.flags.Room2?.room?.find(FIND_MY_CONSTRUCTION_SITES))
-      sites = sites.concat(Game.flags.Room3?.room?.find(FIND_MY_CONSTRUCTION_SITES))
-      sites = @pathUtils.sortByDistance(sites)
-    if sites.length == 0
-      sites = @pathUtils.sortByDistance(@creep.room.find(FIND_MY_STRUCTURES).filter(@ramparts))
-    if sites.length == 0
-      sites = @pathUtils.sortByDistance(@creep.room.find(FIND_STRUCTURES).filter(@walls))
-    #if sites.length == 0
-    #  sites = [@creep.room.controller] if @creep.room.controller.owner.username == "omgbear"
-    sites[0]
-
-module.exports = Role
+  
+module.exports = Roles

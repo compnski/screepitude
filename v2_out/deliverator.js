@@ -1,10 +1,12 @@
-var Agent, Config, Deliverator, shortName,
+var Agent, Config, Deliverator, Utils, shortName,
   extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
   hasProp = {}.hasOwnProperty;
 
 Agent = require('agent');
 
 Config = require('config');
+
+Utils = require('utils');
 
 shortName = function(target) {
   var parts;
@@ -31,26 +33,22 @@ Deliverator = (function(superClass) {
   Deliverator.prototype.fill = function() {
     var err, harvestFunc, moveErr, target;
     target = Game.getObjectById(this.creep.memory.sourceId);
-    if (target == null) {
+    if (!target) {
       target = this.source;
       if (target != null) {
         this.creep.say("-> " + (target.name || target.structureType || target.id));
       }
-      if (target != null) {
+      if ((target != null) && Config.ChattyDeliverator) {
         this.log("fill from " + (target.name || target.structureType || target.id || target.constructor));
       }
     }
-    if (target == null) {
+    if (!target) {
       return false;
     }
     this.creep.memory.sourceId = target.id;
-    if (!this.creep.pos.isNearTo(target)) {
-      this.moveTo(target);
-      return;
-    }
     harvestFunc = (function() {
       switch (false) {
-        case !(target.structureType === STRUCTURE_SPAWN || target.structureType === STRUCTURE_EXTENSION || target.structure === STRUCTURE_STORAGE):
+        case !(target.structureType === STRUCTURE_SPAWN || target.structureType === STRUCTURE_EXTENSION || target.structure === STRUCTURE_STORAGE || target.structureType === STRUCTURE_TOWER):
           return (function(_this) {
             return function() {
               return target.transferEnergy(_this.creep);
@@ -68,6 +66,12 @@ Deliverator = (function(superClass) {
               return _this.creep.harvest(target);
             };
           })(this);
+        case !(target.constructor = Resource):
+          return (function(_this) {
+            return function() {
+              return _this.creep.pickup(target);
+            };
+          })(this);
       }
     }).call(this);
     moveErr = -1;
@@ -80,6 +84,8 @@ Deliverator = (function(superClass) {
     }
     if (err < 0 && err !== ERR_NOT_IN_RANGE && err !== ERR_NOT_ENOUGH_RESOURCES) {
       this.creep.memory.failCount++;
+      this.creep.log(err, target);
+      delete this.creep.memory.sourceId;
     }
     if (this.creep.memory.failCount > 10) {
       delete this.creep.memory.sourceId;
@@ -93,7 +99,7 @@ Deliverator = (function(superClass) {
   };
 
   Deliverator.prototype.stillValid = function(target) {
-    return target && target.energyCapacity > 0 && target.energy !== target.energyCapacity;
+    return target && (target.energyCapacity > 0 && target.energy !== target.energyCapacity || (target.structureType !== STRUCTURE_EXTENSION || target.structureType !== STRUCTURE_SPAWN || target.structureType !== STRUCTURE_TOWER));
   };
 
   Deliverator.prototype.deliver = function() {
@@ -104,7 +110,7 @@ Deliverator = (function(superClass) {
       if (target != null) {
         this.creep.say("<- " + (shortName(target)));
       }
-      if (target != null) {
+      if ((target != null) && Config.ChattyDeliverator) {
         this.log("deliver to " + (target.name || target.structureType || target.constructor) + " " + this.creep.memory.failCount);
       }
     }
@@ -112,12 +118,6 @@ Deliverator = (function(superClass) {
       return false;
     }
     this.creep.memory.deliverId = target.id;
-    if (!this.creep.pos.isNearTo(target)) {
-      this.moveTo(target, {
-        resusePath: 60
-      });
-      return;
-    }
     deliverFunc = (function() {
       switch (false) {
         case target.structureType !== STRUCTURE_CONTROLLER:
@@ -132,7 +132,7 @@ Deliverator = (function(superClass) {
               return _this.creep.build(target);
             };
           })(this);
-        case !(target.structureType === STRUCTURE_WALL || target.structureType === STRUCTURE_ROAD || target.structureType === STRUCTURE_RAMPART):
+        case !((target.structureType === STRUCTURE_WALL || target.structureType === STRUCTURE_ROAD || target.structureType === STRUCTURE_RAMPART) || (this.creep.canRepair() && Utils.needsRepair(target))):
           return (function(_this) {
             return function() {
               return _this.creep.repair(target);
@@ -162,10 +162,12 @@ Deliverator = (function(superClass) {
       return;
     }
     if (err === -8) {
+      this.creep.memory.failCount = 0;
       delete this.creep.memory.deliverId;
+      return;
     }
     if (err < 0 && err !== ERR_NOT_IN_RANGE) {
-      this.log(err);
+      this.creep.log(err);
       this.creep.memory.failCount++;
     }
     if (this.creep.memory.failCount > 10) {
@@ -182,9 +184,6 @@ Deliverator = (function(superClass) {
 
   Deliverator.prototype.loop = function() {
     var e;
-    if (this.creep.fatigue > 0) {
-      return;
-    }
     try {
       return this.loopAction();
     } catch (_error) {
@@ -195,6 +194,11 @@ Deliverator = (function(superClass) {
 
   Deliverator.prototype.loopAction = function() {
     var ret;
+    if ((Game.flags.ClearTarget != null) && Game.flags.ClearTarget.color === "white" && this.creep.pos.getRangeTo(Game.flags.ClearTarget) < 4) {
+      delete this.creep.memory.deliverId;
+      delete this.creep.memory.sourceId;
+    }
+    this.checkState();
     switch (this.creep.memory.state) {
       case 'fill':
         ret = this.fill();
@@ -203,30 +207,45 @@ Deliverator = (function(superClass) {
         ret = this.deliver();
         break;
       case 'renew':
-        this.setState('deliver');
-        return;
-        if (Game.spawns.Spawn1.renewCreep(this.creep) === ERR_NOT_IN_RANGE) {
+        this.creep.say('Renew!');
+        if (!this.creep.pos.isNearTo(Game.spawns.Spawn1)) {
           this.creep.moveTo(Game.spawns.Spawn1);
+        } else {
+          if (Game.spawns.Spawn1.renewCreep(this.creep) < 0) {
+            this.setState('');
+          }
         }
         if (this.creep.ticksToLive > Math.min(Config.CreepRenewEnergy * 2, 1400) || Game.spawns.Spawn1.energy === 0) {
-          this.setState('');
+          this.setState('fill');
         }
     }
+    this.checkState();
+    return ret;
+  };
+
+  Deliverator.prototype.checkState = function() {
     switch (false) {
-      case this.creep.memory.state !== 'renew':
-        'nothing';
-        break;
+      case !(this.creep.memory.state === 'renew' && Game.spawns.Spawn1.energy > 100):
+        return 'nothing';
       case !this.fullEnergy():
+        if (this.creep.ticksToLive < Config.CreepRenewEnergy && this.creep.pos.inRangeTo(Game.spawns.Spawn1, 5) && Game.spawns.Spawn1.energy > 100 && !Game.spawns.Spawn1.spawning) {
+          this.creep.say('renew');
+          this.setState('renew');
+          return;
+        }
         delete this.creep.memory.sourceId;
         this.setState('deliver');
-        this.creep.memory.failCount = 0;
-        break;
+        return this.creep.memory.failCount = 0;
       case this.creep.carry.energy !== 0:
+        if (this.creep.ticksToLive < Config.CreepRenewEnergy && this.creep.pos.inRangeTo(Game.spawns.Spawn1, 5) && Game.spawns.Spawn1.energy > 100 && !Game.spawns.Spawn1.spawning) {
+          this.creep.say('renew');
+          this.setState('renew');
+          return;
+        }
         this.setState('fill');
         this.creep.memory.failCount = 0;
-        delete this.creep.memory.deliverId;
+        return delete this.creep.memory.deliverId;
     }
-    return ret;
   };
 
   return Deliverator;

@@ -15,17 +15,9 @@ Agent = (function() {
     if (opts == null) {
       opts = {};
     }
-    if (targetPos.pos != null) {
-      targetPos = targetPos.pos;
-    }
-    opts.maxOps || (opts.maxOps = 1000);
-    if (targetPos.roomName !== this.creep.pos.roomName) {
-      opts.reusePath || (opts.reusePath = 10);
-      return this.creep.moveTo(targetPos, opts);
-    } else {
-      opts.reusePath || (opts.reusePath = 20);
-      return this.creep.moveTo(targetPos, opts);
-    }
+    return Game.wp.move(this.creep, function() {
+      return targetPos;
+    });
   };
 
   Agent.prototype.loop = function() {

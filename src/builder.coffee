@@ -2,15 +2,11 @@ PathUtils = require('path_utils')
 Deliverator = require('deliverator')
 Config = require('config')
 class Builder extends Deliverator
-  constructor: (creep, sourceFn=null, rallyFlag=null) ->
+  constructor: (creep, sourceFn, rallyFlag=null) ->
     if rallyFlag?
       @target = rallyFlag
     else
       @target = creep
-    
-    unless sourceFn?
-      @pathUtils ||= new PathUtils(@target)
-      sourceFn = @pathUtils.nearestEnergyProvider
     super(creep, sourceFn, @constructionSite)
     creep.memory.energyRequester = true
 
