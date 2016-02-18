@@ -7,6 +7,10 @@
     "grunt-contrib-jshint": "~0.10.0",
     "grunt-contrib-nodeunit": "~0.4.1",
     "grunt-contrib-uglify": "^0.5.1",
-    "grunt-screeps": "^1.2.0"
+    "grunt-screeps": "^1.2.0",
+    "grunt-ts": "^5.3.2"
+  },
+  "dependencies": {
+    "screeps-typescript-declarations": "^1.2.2"
   }
 }
