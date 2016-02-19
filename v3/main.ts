@@ -15,17 +15,63 @@ type CreepCmp = (a: Creep, b: Screep) => number;
 
 interface PositionEntity {
     pos : RoomPosition
+    id : string
 }
 
 
-interface Job {
+class Job {
     name: string;
     start: PositionEntity;
-    end?: PositionEntity;
+    end: PositionEntity;
     jobFunc: JobFunc;
     candidateFilter: CreepFilter;
     candidateCmp: CreepCmp;
-    creep?: Screep; // Set during executiong
+    creep: Screep; // Set during executiong
+
+
+    constructor(opts={}) {
+        this.name = opts['name']
+        this.start = opts['start']
+        this.end = opts['end']
+        this.jobFunc = opts['jobFunc']
+        this.candidateFilter = opts['candidateFilter']
+        this.candidateCmp = opts['candidateCmp']
+    }
+
+    toJSON() {
+        var jobFn :any = this.jobFunc;
+        var filterFn:any = this.candidateFilter;
+        var cmpFn:any = this.candidateCmp;
+        var ret = {
+            name: this.name,
+            start: this.start.id,
+            jobFunc: RolesReverse[jobFn],
+            candidateFilter: FiltersReverse[filterFn],
+            candidateCmp: CmpReverse[cmpFn]
+            };
+         if (this.end != undefined){
+             ret['end'] = this.end.id;
+         }
+         return ret
+    }
+}
+
+var parseJob = (k :string, v):any => {
+    switch (k) {
+        case 'start','end':
+            return Game.getObjectById(v)
+        break;
+        case 'jobFunc':
+            return Roles[v];
+        break;
+        case 'candidateFilter':
+            return Filters[v];
+        break;
+        case 'candidateCmp':
+            return Cmp[v];
+        break;
+    }
+    return v
 }
 
 
@@ -63,14 +109,24 @@ var Roles: { [index: string]: JobFunc } = {
        }
        return err;
     }
-
 }
+var RolesReverse = {}
+for (var rn of Object.keys(Roles)) {
+    var fn :any = Roles[rn]
+    RolesReverse[fn] = rn
+}
+
 
 var Filters: { [index: string]: CreepFilter } = {
     worksAndMoves: (creep: Screep) => {
         return creep.canWork() && creep.canMove();
     }
 
+}
+var FiltersReverse = {}
+for (var rn of Object.keys(Filters)) {
+    var fn :any = Filters[rn]
+    FiltersReverse[fn] = rn
 }
 
 var Cmp: { [index: string]: CreepCmp } = {
@@ -81,20 +137,33 @@ var Cmp: { [index: string]: CreepCmp } = {
     //     return a.pos.getRangeTo(creep.job.start) - b.pos.getRangeTo(creep.job.start);
     // }
 }
+var CmpReverse = {}
+for (var rn of Object.keys(Cmp)) {
+    var fn :any = Cmp[rn];
+    CmpReverse[fn] = rn;
+};
 
-var jobs: Job[] = [{
+
+
+var jobs: Job[] = [new Job({
     name: "mega_miner_1",
     start: Game.flags['Mine_1_1'],
     jobFunc: Roles['megaMiner'],
     candidateFilter: Filters['worksAndMoves'],
-    candidateCmp: Cmp['worksHard']
-},{
+    candidateCmp: Cmp['worksHard'],
+}),new Job({
     name: "mega_miner_2",
     start: Game.flags['Mine_1_2'],
     jobFunc: Roles['megaMiner'],
     candidateFilter: Filters['worksAndMoves'],
-    candidateCmp: Cmp['worksHard']
-}]
+    candidateCmp: Cmp['worksHard'],
+})]
+
+
+// console.log(JSON.stringify(jobs))
+// console.log(JSON.parse(JSON.stringify(jobs[0]),parseJob).jobFunc)
+
+//var jobs:Job[] = []
 
 
 // TODO: API to add jobs, some way to combine in-memory jobs with in-code jobs
@@ -174,3 +243,5 @@ for (creep of creeps) {
         creep.log("Nothing to do")
     }
 }
+
+Game.Roles = Roles
