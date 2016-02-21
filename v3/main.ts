@@ -262,6 +262,7 @@ var runAllJobs = (staticJobs: Job[], memJobs: Job[]) => {
     // Upgrade all controllers
     // iteratre through rooms, make sure we have jobs for each controller, based on local energy situation and #free slots around controller (look at mine code)
 
+    // Fill spawns, extensions, towers
 
     // Mine all sources
     // Find all sources in rooms, make sure there is a job to mine each
@@ -269,6 +270,8 @@ var runAllJobs = (staticJobs: Job[], memJobs: Job[]) => {
     // Build things
     // Repair things
     // etc.
+
+    // Defend, attack, etc.
 
 
     // Eventually have part that builds creeps
@@ -303,24 +306,33 @@ var runAllJobs = (staticJobs: Job[], memJobs: Job[]) => {
         }
     }
 
+    var runJob = (creep: Screep, job:Job) :number => {
+        var ret = creep.job.jobFunc(creep, creep.job)
+        if (ret == JOB_COMPLETE) {
+            creep.log("Job complete!")
+            removeJob(creep.job)
+            clearJob(creep, creep.job)
+        }
+        return ret
+    }
+
     job = null
     for (var creep of creeps) {
         if (creep.job != undefined) {
             creep.log("job=" + creep.job.name)
-            if (creep.job.start == undefined){
+            if (creep.job.start == undefined) {
                 // TODO: Cleanup
                 removeJob(creep.job)
                 clearJob(creep, creep.job)
                 continue;
             }
-            var ret = creep.job.jobFunc(creep, creep.job)
-            if (ret == JOB_COMPLETE) {
-                creep.log("Job complete!")
-                removeJob(creep.job)
-                clearJob(creep, creep.job)
-            }
+            runJob(creep, job)
+        } else if (creep.carry.energy > 0) {
+            var j = createDeliverJob(creep)
+            addJob(j)
+            setJob(creep, j)
+            runJob(creep, j)
         } else {
-            addJob(createDeliverJob(creep))
             creep.log("Nothing to do")
         }
     }
