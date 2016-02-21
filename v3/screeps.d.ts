@@ -837,7 +837,7 @@ interface RoomPosition {
      * @param objects An array of room's objects or RoomPosition objects that the search should be executed against.
      * @param opts An object containing pathfinding options (see Room.findPath), or one of the following: filter, algorithm
      */
-    findClosestByPath<T>(objects: [T | RoomPosition], opts?: {
+    findClosestByPath<T>(objects: [T | Structure[]], opts?: {
         filter: any | string;
         algorithm: string;
     }): T;
@@ -854,7 +854,7 @@ interface RoomPosition {
      * @param objects An array of room's objects or RoomPosition objects that the search should be executed against.
      * @param opts An object containing one of the following options: filter
      */
-    findClosestByRange<T>(objects: [T | RoomPosition], opts?: {
+    findClosestByRange<T>(objects: T[], opts?: {
         filter: any | string;
     }): T;
     /**
