@@ -7,6 +7,7 @@ interface Screep extends Creep, SuperCreep{
 
 class SuperCreep {
     name: string;
+    energy: number;
     body: {
 
         /** One of the body parts constants. */

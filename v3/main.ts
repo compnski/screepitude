@@ -12,6 +12,7 @@ type CreepFilter = (creep: Screep) => boolean;
 type CreepCmp = (a: Creep, b: Screep) => number;
 
 
+var JOB_COMPLETE = 999
 
 interface PositionEntity {
     pos: RoomPosition
@@ -105,6 +106,12 @@ var setJob = (creep: Screep, job: Job) => {
     creep.job = job;
 }
 
+var clearJob = (creep: Screep, job: Job) => {
+    delete Memory['job_workers'][job.name];
+    delete job.creep
+    delete creep.job
+}
+
 var getMyStructuresInAllRooms = (structTypes: string[]): Structure[] => {
     var structs = []
     for (var roomName of Object.keys(Game.rooms)) {
@@ -174,12 +181,16 @@ var createDeliverJob = (target: PositionEntity): Job => {
 
 // TODO: API to add jobs, some way to combine in-memory jobs with in-code jobs
 // fitness func for candidates based on distance.
-
-// TODO: A way for jobs to be done and get cleared.
 var runAllJobs = (staticJobs: Job[], memJobs: Job[]) => {
 
     var addJob = (job: Job) => {
         memJobs.push(job)
+    }
+
+    var removeJob = (job: Job) => {
+        var idx = memJobs.indexOf(job)
+        if (idx < 0) return
+        memJobs.splice(idx, 1)
     }
 
     var jobs = staticJobs.concat(memJobs)
@@ -219,12 +230,15 @@ var runAllJobs = (staticJobs: Job[], memJobs: Job[]) => {
     }
 
     // Job creators
+
+    // Gather dropped resources
     var GATHER_THRESHOLD = 200 // TODO: Set based on available creeps
     for (var roomName of Object.keys(Game.rooms)) {
         var room = Game.rooms[roomName]
         var resources = room.find(FIND_DROPPED_RESOURCES)
         var resourcesById: { [index: string]: number } = {}
         for (var job of jobs) {
+            if (job.start == undefined) continue;
             if (job.jobFunc == Roles["carry"] && job.start["resourceType"] == RESOURCE_ENERGY) {
                 if (resourcesById[job.start.id] == undefined) {
                     resourcesById[job.start.id] = 0;
@@ -244,6 +258,22 @@ var runAllJobs = (staticJobs: Job[], memJobs: Job[]) => {
             }
         }
     }
+
+    // Upgrade all controllers
+    // iteratre through rooms, make sure we have jobs for each controller, based on local energy situation and #free slots around controller (look at mine code)
+
+
+    // Mine all sources
+    // Find all sources in rooms, make sure there is a job to mine each
+
+    // Build things
+    // Repair things
+    // etc.
+
+
+    // Eventually have part that builds creeps
+
+
 
 
     // Allocate jobs
@@ -277,7 +307,18 @@ var runAllJobs = (staticJobs: Job[], memJobs: Job[]) => {
     for (var creep of creeps) {
         if (creep.job != undefined) {
             creep.log("job=" + creep.job.name)
-            creep.job.jobFunc(creep, creep.job)
+            if (creep.job.start == undefined){
+                // TODO: Cleanup
+                removeJob(creep.job)
+                clearJob(creep, creep.job)
+                continue;
+            }
+            var ret = creep.job.jobFunc(creep, creep.job)
+            if (ret == JOB_COMPLETE) {
+                creep.log("Job complete!")
+                removeJob(creep.job)
+                clearJob(creep, creep.job)
+            }
         } else {
             addJob(createDeliverJob(creep))
             creep.log("Nothing to do")
@@ -293,6 +334,9 @@ var hasEnergy = (s) => {
 
     if (s.store != undefined) {
         return s.store.energy > 0;
+    }
+    if (s.carry != undefined) {
+        return s.carry.energy > 0
     }
     if (s.energy != undefined) {
         return s.energy > 0
@@ -328,6 +372,9 @@ var Roles: { [index: string]: JobFunc } = {
     },
 
     deliver: (creep: Screep, job: Job): number => {
+        if (creep.carry.energy == 0) {
+            return JOB_COMPLETE;
+        }
         if (!creep.pos.isNearTo(job.start)) {
             creep.moveTo(job.start, { reusePath: 20, maxOps: 1000 })
         } else {
@@ -353,6 +400,9 @@ var Roles: { [index: string]: JobFunc } = {
         } else {
             job.jobFunc = Roles['deliver']
             job.start = job.end
+            if (job.end == undefined) {
+                job.end = findNearestStorage(creep)
+            }
             delete job.end
         }
         return err;
