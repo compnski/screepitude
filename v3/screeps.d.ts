@@ -115,14 +115,17 @@ declare var UPGRADE_CONTROLLER_POWER: number;
 declare var RANGED_ATTACK_POWER: number;
 declare var HEAL_POWER: number;
 declare var RANGED_HEAL_POWER: number;
-declare var MOVE: string;
-declare var WORK: string;
-declare var CARRY: string;
-declare var ATTACK: string;
-declare var RANGED_ATTACK: string;
-declare var TOUGH: string;
-declare var HEAL: string;
-declare var CLAIM: string;
+
+declare type BodyPart = string;
+declare var MOVE: BodyPart;
+declare var WORK: BodyPart;
+declare var CARRY: BodyPart;
+declare var ATTACK: BodyPart;
+declare var RANGED_ATTACK: BodyPart;
+declare var TOUGH: BodyPart;
+declare var HEAL: BodyPart;
+declare var CLAIM: BodyPart;
+
 declare var CONSTRUCTION_COST: {
     spawn: number;
     extension: number;
