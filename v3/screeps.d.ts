@@ -646,6 +646,10 @@ interface StoreDefinition {
     energy: number;
     power?: number;
 }
+
+interface Resource extends PositionEntity {
+    resourceType :string;
+}
 /**
  * A dropped piece of energy. It will decay after a while if not picked up.
  */
