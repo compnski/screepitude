@@ -26,6 +26,14 @@ interface EnergyHolder extends Structure {
     transferEnergy(c: Creep)
 }
 
+// TODO: re-add candidate filter
+// TODO: figure out better idle situation
+// TODO: deal with creeps having leftover energy, fix deliver jobs, maybe swap end for 'desired source' or somesuch
+// TODO: take creep localicty into account when comparing
+// TODO: tower logic
+// TODO: builder/ repair logic
+// TODO: road creator -- keep map of road positions, pave most traveled unpaved area
+// TODO : maximize upgrading!
 class Job {
     name: string;
     start: PositionEntity;
@@ -54,6 +62,11 @@ class Job {
         this.jobFunc = opts['jobFunc']
         this.bodyReq = opts['bodyReq']
         this.candidateCmp = opts['candidateCmp']
+        if (this.bodyReq == undefined) {
+            console.log("Bad job!!, no body " + this.name)
+            console.log(opts['bodyReq'])
+            throw new Error("Bad job="+this.name)
+        }
     }
 
     toJSON() {
@@ -275,6 +288,7 @@ var runAllJobs = (staticJobs: Job[], memJobs: Job[]) => {
         var resources = room.find(FIND_DROPPED_RESOURCES)
         var resourcesById: { [index: string]: number } = {}
         for (var job of jobs) {
+            if (job.start == null) continue;
             //console.log(job.name, job.start)
             if ((<Resource>job.start).resourceType == RESOURCE_ENERGY) {
                 if (resourcesById[job.start.id] == undefined) {
@@ -311,6 +325,7 @@ var runAllJobs = (staticJobs: Job[], memJobs: Job[]) => {
     }
     for (var structType of STRUCTURES_TO_INVESTIGATE) {
         for (var struct of structures[structType]) {
+            if (struct.owner && struct.owner.username != 'omgbear') continue;
             var jobsForStruct = []
             for (var job of jobs) {
                 if (job.start && job.start.id == struct.id || (job.end && job.end.id == struct.id)) {
@@ -342,6 +357,26 @@ var runAllJobs = (staticJobs: Job[], memJobs: Job[]) => {
             }
         }
     }
+    // if (room.controller && room.controller.owner && room.controller.owner.username == 'omgbear')
+    //     for (var struct of roomStructures) {
+    //         // todo only repair walls in myrooms
+    //         if (struct.hits < Math.min(struct.hitsMax, 50000) {
+    //             // check it doesnt exist, take into acount above as well
+    //             addJob(createRepairJob(struct))
+    //         }
+    //     }
+    // }
+    // var roomSites = room.find(FIND_MY_CONSTRUCTION_SITES)
+    // for (var site of roomSites) {
+    //     // todo only repair walls in myrooms
+    //     // track buildrers on all sites -- maybe a construction foreman so we dont spawn tons of jobs and
+    //     if (struct.hits < Math.min(struct.hitsMax, 50000) {
+    //         addJob(createRepairJob(struct))
+    //     }
+    // }
+
+
+ 
 
     // Mine all sources
     // Find all sources in rooms, make sure there is a job to mine each
@@ -360,8 +395,9 @@ var runAllJobs = (staticJobs: Job[], memJobs: Job[]) => {
     }
 
     var getCandidateFilter = (bodyReq: BodyPart[]): CreepFilter => {
+        var br = bodyReq.slice(0)
         return (creep: Creep): boolean => {
-            for (var neededPart of bodyReq) {
+            for (var neededPart of br) {
                 var found = false
                 for (var bodyPart of creep.body) {
                     if (bodyPart.type == neededPart) {
