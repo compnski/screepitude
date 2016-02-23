@@ -22,6 +22,7 @@ interface PositionEntity {
 interface EnergyHolder extends Structure {
     energy: number;
     energyCapacity: number;
+    transferEnergy(c :Creep)
 }
 
 class Job {
@@ -32,7 +33,7 @@ class Job {
     candidateFilter: CreepFilter;
     candidateCmp: CreepCmp;
     creep: Screep; // Set during executiong
-
+    bodyReq: BodyPart[]
 
     constructor(opts = {}) {
         this.name = opts['name']
@@ -50,6 +51,7 @@ class Job {
         this.start = opts['start']
         this.end = opts['end']
         this.jobFunc = opts['jobFunc']
+        this.bodyReq = opts['body']
         this.candidateFilter = opts['candidateFilter']
         this.candidateCmp = opts['candidateCmp']
     }
@@ -69,13 +71,11 @@ class Job {
         if (this.end != undefined) {
             ret['end'] = this.end.id;
         }
-        console.log(JSON.stringify(ret))
         return ret
     }
 }
 
 var parseJob = (k: string, v): any => {
-    console.log("Parse: ", k, "   ", JSON.stringify(v))
     switch (k) {
         case 'start':
         case 'end':
@@ -156,8 +156,7 @@ var findNearestStorage = (target: PositionEntity): Structure => {
     return target.pos.findClosestByRange(stores)
 }
 
-var createCarryJob = (target: PositionEntity): Job => {
-
+var createPickupJob = (target: PositionEntity): Job => {
     return new Job({
         namePrefix: 'carry',
         start: target,
@@ -167,6 +166,18 @@ var createCarryJob = (target: PositionEntity): Job => {
         candidateCmp: Cmp['carriesTheMost'],
     })
 }
+
+var createFillJob = (target: PositionEntity): Job => {
+    return new Job({
+        namePrefix: 'carry',
+        start: findNearestStorage(target),
+        end: target,
+        jobFunc: Roles['carry'],
+        candidateFilter: Filters['carriesAndMoves'],
+        candidateCmp: Cmp['carriesTheMost'],
+    })
+}
+
 
 var createDeliverJob = (target: PositionEntity): Job => {
 
@@ -208,6 +219,8 @@ var runAllJobs = (staticJobs: Job[], memJobs: Job[]) => {
 
 
     for (var job of jobs) {
+        // check if still valid
+
         // Check for Dupe
         if (seenJobs[job.name]) {
             console.log("DUPLICATE JOB IN LIST!! " + job.name)
@@ -218,6 +231,15 @@ var runAllJobs = (staticJobs: Job[], memJobs: Job[]) => {
         var creep: Screep;
         if (creepName != undefined) {
             creep = Game.creeps[creepName]
+            console.log(job.start)
+            if (!job.start) {
+                console.log("Start disappeared for " + job.name)
+                removeJob(job)
+                if (creep != undefined) {
+                    clearJob(creep, job)
+                }
+                return
+            }
             if (creep == undefined) {
                 console.log("Bad creep found, replacing: " + JSON.stringify(creep))
                 delete Memory['job_workers'][job.name];
@@ -238,7 +260,6 @@ var runAllJobs = (staticJobs: Job[], memJobs: Job[]) => {
         var resources = room.find(FIND_DROPPED_RESOURCES)
         var resourcesById: { [index: string]: number } = {}
         for (var job of jobs) {
-            if (job.start == undefined) continue;
             if (job.jobFunc == Roles["carry"] && job.start["resourceType"] == RESOURCE_ENERGY) {
                 if (resourcesById[job.start.id] == undefined) {
                     resourcesById[job.start.id] = 0;
@@ -254,13 +275,49 @@ var runAllJobs = (staticJobs: Job[], memJobs: Job[]) => {
         for (var resource of resources) {
             var currentlyAllocatedCapacity = resourcesById[resource.id] || 0;
             if ((resource.amount - currentlyAllocatedCapacity) > GATHER_THRESHOLD) {
-                addJob(createCarryJob(resource))
+                addJob(createPickupJob(resource))
             }
         }
     }
 
+    const STRUCTURES_TO_INVESTIGATE = [STRUCTURE_TOWER, STRUCTURE_CONTROLLER, STRUCTURE_SPAWN, STRUCTURE_EXTENSION]
+    var structures = {}
+    for (var roomName of Object.keys(Game.rooms)) {
+        var room = Game.rooms[roomName];
+        var roomStructures = room.find(FIND_STRUCTURES)
+        for (var structType of STRUCTURES_TO_INVESTIGATE) {
+            structures[structType] = (structures[structType] || []).concat(roomStructures.filter(s=> { return s.structureType == structType }))
+        }
+    }
+    for (var structType of STRUCTURES_TO_INVESTIGATE) {
+        for (var struct of structures[structType]) {
+            var jobsForStruct = []
+            for (var job of jobs) {
+                if (job.start && job.start.id == struct.id || (job.end && job.end.id == struct.id)) {
+                    jobsForStruct.push(job)
+                }
+            }
+            // Determine if we need new jobs now
+            switch (structType) {
+                case STRUCTURE_TOWER:
+                case STRUCTURE_SPAWN:
+                case STRUCTURE_EXTENSION:
+                    if(struct.energy < struct.energyCapacity) {
+                        if(jobsForStruct.length == 0) {
+                            addJob(createFillJob(struct))
+                        }
+                    }
+                    break;
+                case STRUCTURE_CONTROLLER:
+                    console.log("I'm a controller", struct)
+                    break;
+            }
+        }
+    }
     // Upgrade all controllers
     // iteratre through rooms, make sure we have jobs for each controller, based on local energy situation and #free slots around controller (look at mine code)
+
+    // for eaceh room, iterate through strucutres, get list of jobs referencing that structures, create new jobs based on type [TODO, add resource jobs to same framework?]
 
     // Fill spawns, extensions, towers
 
@@ -293,7 +350,6 @@ var runAllJobs = (staticJobs: Job[], memJobs: Job[]) => {
         //pick new one
         console.log("Need to replace creep for job " + job.name)
         // TODO figure out currying to pass job into cmp function
-        console.log(job.candidateFilter)
         var candidates: Screep[] = creeps.filter(noJob).filter(job.candidateFilter).sort(job.candidateCmp)
         if (candidates.length > 0) {
             var creep: Screep = candidates[0];
@@ -306,12 +362,22 @@ var runAllJobs = (staticJobs: Job[], memJobs: Job[]) => {
         }
     }
 
-    var runJob = (creep: Screep, job:Job) :number => {
+    var runJob = (creep: Screep, job: Job): number => {
         var ret = creep.job.jobFunc(creep, creep.job)
-        if (ret == JOB_COMPLETE) {
-            creep.log("Job complete!")
-            removeJob(creep.job)
-            clearJob(creep, creep.job)
+        switch (ret) {
+            case JOB_COMPLETE:
+                creep.log("Job complete!")
+                removeJob(creep.job)
+                clearJob(creep, creep.job)
+                break;
+            case ERR_NOT_FOUND:
+            case ERR_INVALID_TARGET:
+            case ERR_FULL:
+            case ERR_INVALID_ARGS:
+            case ERR_NOT_OWNER:
+                creep.log("Job Failed!! err=" + ret)
+                removeJob(creep.job)
+                clearJob(creep, creep.job)
         }
         return ret
     }
@@ -384,9 +450,6 @@ var Roles: { [index: string]: JobFunc } = {
     },
 
     deliver: (creep: Screep, job: Job): number => {
-        if (creep.carry.energy == 0) {
-            return JOB_COMPLETE;
-        }
         if (!creep.pos.isNearTo(job.start)) {
             creep.moveTo(job.start, { reusePath: 20, maxOps: 1000 })
         } else {
@@ -394,6 +457,9 @@ var Roles: { [index: string]: JobFunc } = {
             if (err == ERR_NOT_IN_RANGE) {
                 err = creep.moveTo(job.start);
             }
+        }
+        if (creep.carry.energy == 0) {
+            return JOB_COMPLETE;
         }
         return err
     },
@@ -404,12 +470,21 @@ var Roles: { [index: string]: JobFunc } = {
             if (!creep.pos.isNearTo(job.start)) {
                 creep.moveTo(job.start, { reusePath: 20, maxOps: 1000 })
             } else {
-                var err = creep.pickup(<Energy>job.start);
+                var err;
+                if ((<Energy>job.start).amount != undefined) {
+                    err = creep.pickup(<Energy>job.start);
+                } else {
+                    console.log(typeof job.start, JSON.stringify(job.start))
+                    err = (<EnergyHolder>job.start).transferEnergy(creep)
+                }
+
                 if (err == ERR_NOT_IN_RANGE) {
                     err = creep.moveTo(job.start);
                 }
             }
-        } else {
+        } 
+
+        if (creep.carry.energy == creep.carryCapacity) {
             job.jobFunc = Roles['deliver']
             job.start = job.end
             if (job.end == undefined) {
@@ -488,7 +563,10 @@ var staticJobs: Job[] = [new Job({
 
 var memJobs: Job[] = [];
 try {
-    memJobs = JSON.parse(Memory["jobs"], parseJob)
+    var jobsJSON = Memory["jobs"];
+    if (jobsJSON != undefined) {
+        memJobs = JSON.parse(jobsJSON, parseJob)
+    }
 } catch (ex) {
     console.log("Error parsing in memory jobs!: " + ex + "\n  " + Memory["jobs"])
     console.log(ex.stack)
