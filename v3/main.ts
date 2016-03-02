@@ -313,6 +313,29 @@ var runAllJobs = (staticJobs: Job[], memJobs: Job[]) => {
             }
         }
     }
+    var needsRepair = (s) => {
+        if (s.structureType==STRUCTURE_WALL) {
+            return s.hits < Math.min(s.hitsMax, 50000)
+        }
+        if (s.structureType == STRUCTURE_RAMPART) {
+            return s.hits < Math.min(s.hitsMax, 10000)
+        }
+        return s.hits < s.hitsMax
+    }
+
+    var runTower = (tower) => {
+        // Find structures, sort by priority?
+        // Eventually tower can consume jobs:? or always separate
+        // TODO: buildings/roads/ramparts/walls
+        var structures = tower.room.find(FIND_STRUCTURES)
+        structures.sort((a, b) => { return a.hits - b.hits })
+        for (var s of structures) {
+            if (needsRepair(s)) {
+                 tower.repair(s)
+                 break
+            }
+        }
+    }
 
     const STRUCTURES_TO_INVESTIGATE = [STRUCTURE_TOWER, STRUCTURE_CONTROLLER, STRUCTURE_SPAWN, STRUCTURE_EXTENSION]
     var structures = {}
@@ -335,6 +358,7 @@ var runAllJobs = (staticJobs: Job[], memJobs: Job[]) => {
             // Determine if we need new jobs now
             switch (structType) {
                 case STRUCTURE_TOWER:
+                    runTower(struct)
                 case STRUCTURE_SPAWN:
                 case STRUCTURE_EXTENSION:
                     if (struct.energy < struct.energyCapacity) {
