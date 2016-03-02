@@ -525,6 +525,10 @@ var runAllJobs = (staticJobs: Job[], memJobs: Job[]) => {
         //     runJob(creep, j)
         } else {
             creep.log("Nothing to do")
+            // TODO: Count # of idle bots, eventually cull weak/old ones
+            if (Game.flags['Idle'] != undefined) {
+                creep.moveTo(Game.flags['Idle'])
+            }
         }
     }
 
@@ -734,8 +738,20 @@ try {
 var preJobTs = Game.cpu.getUsed()
 runAllJobs(staticJobs, memJobs)
 var postJobTs = Game.cpu.getUsed()
+var toRm : Job[] = []
+for (var job of memJobs) {
+    if (job.start == undefined) {
+        toRm.push(job)
+    }
+}
+for (var job of toRm) {
+    var idx = memJobs.indexOf(job);
+    memJobs.splice(idx, 1);
+}
+
 
 Memory["jobs"] = JSON.stringify(memJobs)
+
 //console.log(postJobTs - preJobTs)
 
 // console.log(JSON.stringify(jobs))
@@ -746,3 +762,11 @@ Memory["jobs"] = JSON.stringify(memJobs)
 
 
 Game.Roles = Roles
+var clk = Game.flags['Clock']
+if(clk != undefined) {
+    if(clk.color != COLOR_WHITE) {
+        clk.setColor(COLOR_WHITE)
+    } else {
+        clk.setColor(COLOR_GREY)
+    }
+}
