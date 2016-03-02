@@ -1,5 +1,10 @@
 /// <reference path="screeps.d.ts" />
 
+interface PositionEntity {
+    pos: RoomPosition
+    id: string
+    transferEnergy(creep: Creep): number;
+}
 
 interface Screep extends Creep, SuperCreep{
     job? : Job;
@@ -17,7 +22,6 @@ class SuperCreep {
         hits: number
 
     }[];
-
 
     howManyParts(part:string):number {
       return this.body.filter(s => { return (s.type == part && s.hits > 0) }).length 

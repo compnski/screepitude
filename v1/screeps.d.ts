@@ -5,7 +5,11 @@ author: [Semigradsky Dmitry](https://github.com/Semigradsky)
 license: [MIT License](https://github.com/Semigradsky/screeps-typescript-definition/blob/master/LICENSE)
 */
 
-interface PositionEntity { }
+interface PositionEntity { 
+    pos: RoomPosition
+    id: string
+    transferEnergy(creep:Creep): number;
+}
 interface RepairableEntity { }
 interface AttackableEntity extends PositionEntity { }
 
