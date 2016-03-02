@@ -178,7 +178,7 @@ var createPickupJob = (target: PositionEntity): Job => {
 
 var createFillJob = (target: PositionEntity): Job => {
     return new Job({
-        namePrefix: 'carry',
+        namePrefix: 'fill',
         start: findNearestStorage(target),
         end: target,
         jobFunc: Roles['carry'],
@@ -189,11 +189,22 @@ var createFillJob = (target: PositionEntity): Job => {
 
 var createDeliverJob = (target: PositionEntity): Job => {
     return new Job({
-        namePrefix: 'carry',
+        namePrefix: 'deliver',
         start: findNearestStorage(target),
         jobFunc: Roles['deliver'],
         bodyReq: [MOVE, CARRY, CARRY],
         candidateCmp: Cmp['noop'],
+    })
+}
+
+var createBuildJob = (target: PositionEntity): Job => {
+    return new Job({
+        namePrefix: 'upgrade',
+        start: findNearestStorage(target),
+        end: target,
+        jobFunc: Roles['carry'],
+        bodyReq: [MOVE, WORK, CARRY],
+        candidateCmp: Cmp['carriesTheMost'],
     })
 }
 
@@ -369,11 +380,11 @@ var runAllJobs = (staticJobs: Job[], memJobs: Job[]) => {
                     break;
                 case STRUCTURE_CONTROLLER:
                     if (struct.level < 5) {
-                        if (jobsForStruct.length < 3) {
+                        if (jobsForStruct.length <= 3) {
                             addJob(createUpgradeJob(struct))
                         }
                     } else {
-                        if (jobsForStruct.length < 2) {
+                        if (jobsForStruct.length <= 2) {
                             addJob(createUpgradeJob(struct))
                         }
                     }
@@ -390,14 +401,19 @@ var runAllJobs = (staticJobs: Job[], memJobs: Job[]) => {
     //         }
     //     }
     // }
-    // var roomSites = room.find(FIND_MY_CONSTRUCTION_SITES)
-    // for (var site of roomSites) {
-    //     // todo only repair walls in myrooms
-    //     // track buildrers on all sites -- maybe a construction foreman so we dont spawn tons of jobs and
-    //     if (struct.hits < Math.min(struct.hitsMax, 50000) {
-    //         addJob(createRepairJob(struct))
-    //     }
-    // }
+    var roomSites = room.find(FIND_MY_CONSTRUCTION_SITES)
+    for (var site of roomSites) {
+        var jobsForSite: Job[] = []
+        for (var job of jobs) {
+            if (job.start && job.start.id == struct.id || (job.end && job.end.id == struct.id)) {
+                jobsForSite.push(job)
+            }
+        }
+
+        // todo only repair walls in myrooms
+        // track buildrers on all sites -- maybe a construction foreman so we dont spawn tons of jobs and
+         addJob(createBuildJob(site))
+    }
 
 
  
@@ -610,6 +626,8 @@ var Roles: { [index: string]: JobFunc } = {
             var start: Structure = <Structure>job.start
             if ((start).structureType == 'controller' && start.owner && start.owner.username == 'omgbear') {
                 err = creep.upgradeController(<Structure>job.start)
+            } else if (start.constructor == ConstructionSite) {
+                err = creep.build(<ConstructionSite>job.start);
             } else {
                 err = creep.transferEnergy(<Structure>job.start);
             }
