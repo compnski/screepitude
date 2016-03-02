@@ -348,7 +348,7 @@ var runAllJobs = (staticJobs: Job[], memJobs: Job[]) => {
         }
     }
 
-    const STRUCTURES_TO_INVESTIGATE = [STRUCTURE_TOWER, STRUCTURE_CONTROLLER, STRUCTURE_SPAWN, STRUCTURE_EXTENSION]
+    const STRUCTURES_TO_INVESTIGATE = [STRUCTURE_SPAWN, STRUCTURE_EXTENSION, STRUCTURE_TOWER, STRUCTURE_CONTROLLER]
     var structures = {}
     for (var roomName of Object.keys(Game.rooms)) {
         var room = Game.rooms[roomName];
