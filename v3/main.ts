@@ -214,6 +214,16 @@ var createUpgradeJob = (target: PositionEntity): Job => {
     })
 }
 
+var createRepairJob = (target: PositionEntity): Job => {
+    return new Job({
+        namePrefix: 'repair',
+        start: target,
+        jobFunc: Roles['repair'],
+        bodyReq: [MOVE, WORK, CARRY],
+        candidateCmp: Cmp['carriesTheMost'],
+    })
+}
+
 var createMinerJob = (target: PositionEntity): Job => {
 
     return new Job({
@@ -223,6 +233,17 @@ var createMinerJob = (target: PositionEntity): Job => {
         bodyReq: [WORK, WORK, MOVE],
         candidateCmp: Cmp['worksHard'],
     })
+}
+
+
+var needsRepair = (s:Structure):boolean => {
+    if (s.structureType == STRUCTURE_WALL) {
+        return s.hits < Math.min(s.hitsMax, 50000)
+    }
+    if (s.structureType == STRUCTURE_RAMPART) {
+        return s.hits < Math.min(s.hitsMax, 10000)
+    }
+    return s.hits < s.hitsMax
 }
 
 var roomControlledByMe = (room:Room):boolean => {
@@ -341,14 +362,11 @@ var runAllJobs = (jobs: Job[]) => {
             }
         }
     }
-    var needsRepair = (s) => {
-        if (s.structureType==STRUCTURE_WALL) {
-            return s.hits < Math.min(s.hitsMax, 50000)
+
+    var targetAttactivenessCmp = (tower:Tower|Screep)  => {
+        return (a:Screep,b:Screep):number => {
+            return scoreTarget(tower, a) - scoreTarget(tower,b)
         }
-        if (s.structureType == STRUCTURE_RAMPART) {
-            return s.hits < Math.min(s.hitsMax, 10000)
-        }
-        return s.hits < s.hitsMax
     }
 
     var runTower = (tower) => {
@@ -425,6 +443,22 @@ var runAllJobs = (jobs: Job[]) => {
     //         }
     //     }
     // }
+    for (var struct of roomStructures) {
+        if (ownedByMe(struct) && needsRepair(struct)) {
+            var jobExists:boolean = false
+            for (var j of jobs) {
+                if (j.jobFunc == Roles['repair'] && j.start.id == struct.id) {
+                    jobExists = true
+                    break
+                }
+                if (jobExists) break
+            }
+            if (!jobExists) {
+                console.log("Repair site: " + struct.id)
+                addJob(createRepairJob(struct))
+            }
+        }
+    }
     var roomSites = room.find(FIND_MY_CONSTRUCTION_SITES)
     for (var site of roomSites) {
         var jobsForSite: Job[] = []
@@ -436,7 +470,10 @@ var runAllJobs = (jobs: Job[]) => {
 
         // todo only repair walls in myrooms
         // track buildrers on all sites -- maybe a construction foreman so we dont spawn tons of jobs and
-         addJob(createBuildJob(site))
+        const BUILDERS_PER_SITE = 2
+        if (jobsForSite.length < BUILDERS_PER_SITE) {
+             addJob(createBuildJob(site))
+        }
     }
 
 
@@ -619,6 +656,15 @@ var hasEnergy = (s) => {
     return false
 }
 
+var transferEnergy = (from,to):number => {
+    if (from.transferEnergy != undefined) {
+        return from.transferEnergy(to)
+    }
+    if (from.transfer != undefined) {
+        return from.transfer(to, RESOURCE_ENERGY)
+    }
+}
+
 var Roles: { [index: string]: JobFunc } = {
     megaMiner: (creep: Screep, job: Job): number => {
         var sourceId = creep.memory.sId;
@@ -646,6 +692,30 @@ var Roles: { [index: string]: JobFunc } = {
         return err;
     },
 
+    repair: (creep: Screep, job: Job): number => {
+        if (creep.carry.energy == 0) {
+            var energySource = findNearestStorage(creep)
+            var err = ERR_NOT_IN_RANGE
+            if (creep.pos.isNearTo(energySource)) {
+                err = transferEnergy(energySource, creep)
+            }
+            if (err == ERR_NOT_IN_RANGE) {
+                creep.moveTo(energySource, { reusePath: 40, maxOps: 1000 })
+            }
+        }
+        if (!creep.pos.isNearTo(job.start)) {
+            creep.moveTo(job.start, { reusePath: 40, maxOps: 1000 })
+        } else {
+            err = creep.repair(<Structure>job.start)
+            if (err == ERR_NOT_IN_RANGE) {
+                err = creep.moveTo(job.start);
+            }
+        }
+        if (creep.carry.energy == 0) {
+            return JOB_COMPLETE;
+        }
+        return err
+    },
     deliver: (creep: Screep, job: Job): number => {
         if (!creep.pos.isNearTo(job.start)) {
             creep.moveTo(job.start, { reusePath: 20, maxOps: 1000 })
