@@ -15,11 +15,6 @@ type CreepCmp = (a: Creep, b: Screep) => number;
 const JOB_COMPLETE = 999
 const E_CRASH = -99
 
-interface PositionEntity {
-    pos: RoomPosition
-    id: string
-}
-
 interface EnergyHolder extends Structure {
     energy: number;
     energyCapacity: number;
@@ -36,8 +31,8 @@ interface EnergyHolder extends Structure {
 // TODO : maximize upgrading!
 class Job {
     name: string;
-    start: PositionEntity;
-    end: PositionEntity;
+    start: Structure | ConstructionSite | Energy | PositionEntity;
+    end: Structure | ConstructionSite | Energy | PositionEntity;
     jobFunc: JobFunc;
     candidateFilter: CreepFilter;
     candidateCmp: CreepCmp;
@@ -219,26 +214,48 @@ var createUpgradeJob = (target: PositionEntity): Job => {
     })
 }
 
+var createMinerJob = (target: PositionEntity): Job => {
 
+    return new Job({
+        name: "miner",
+        start: target,
+        jobFunc: Roles['megaMiner'],
+        bodyReq: [WORK, WORK, MOVE],
+        candidateCmp: Cmp['worksHard'],
+    })
+}
+
+var roomControlledByMe = (room:Room):boolean => {
+    if (room == undefined || room.controller == undefined) return false
+
+    if (room.controller.owner != undefined && room.controller.owner.username == 'omgbear') {
+        return true
+    }
+    if (room.controller.reservation != undefined && room.controller.reservation.username == 'omgbear') {
+       return true
+    }
+    return false
+}
+
+var ownedByMe = (struct:Structure): boolean => {
+   if (struct.owner && struct.owner.username == 'omgbear'){
+       return true
+   }
+   return roomControlledByMe(struct.room)
+}
 // TODO: API to add jobs, some way to combine in-memory jobs with in-code jobs
 // fitness func for candidates based on distance.
-var runAllJobs = (staticJobs: Job[], memJobs: Job[]) => {
+var runAllJobs = (jobs: Job[]) => {
 
     var addJob = (job: Job) => {
-        memJobs.push(job)
+        jobs.push(job)
     }
 
     var removeJob = (job: Job) => {
-        var idx = memJobs.indexOf(job)
+        var idx = jobs.indexOf(job)
         if (idx < 0) return
-        memJobs.splice(idx, 1)
-
-        idx = jobs.indexOf(job)
         jobs.splice(idx, 1)
-
     }
-
-    var jobs = staticJobs.concat(memJobs)
 
     if (Memory['job_workers'] == undefined) {
         console.log("replacing worker map1!!")
@@ -355,6 +372,13 @@ var runAllJobs = (staticJobs: Job[], memJobs: Job[]) => {
         var roomStructures = room.find(FIND_STRUCTURES)
         for (var structType of STRUCTURES_TO_INVESTIGATE) {
             structures[structType] = (structures[structType] || []).concat(roomStructures.filter(s=> { return s.structureType == structType }))
+        }
+        if (roomControlledByMe(room)) {
+            for (var source of room.find(FIND_SOURCES)) {
+                if (jobs.filter((job: Job):boolean => { return job.jobFunc == Roles['megaMiner'] && job.start && job.start.id == source.id }).length == 0) {
+                    addJob(createMinerJob(source))
+                }
+            }
         }
     }
     for (var structType of STRUCTURES_TO_INVESTIGATE) {
@@ -705,19 +729,19 @@ for (var rn of Object.keys(Cmp)) {
 };
 
 
-var staticJobs: Job[] = [new Job({
-    name: "mega_miner_1",
-    start: Game.flags['Mine_1_1'],
-    jobFunc: Roles['megaMiner'],
-    bodyReq: [WORK, MOVE],
-    candidateCmp: Cmp['worksHard'],
-}), new Job({
-    name: "mega_miner_2",
-    start: Game.flags['Mine_1_2'],
-    jobFunc: Roles['megaMiner'],
-    bodyReq: [WORK, MOVE],
-    candidateCmp: Cmp['worksHard'],
-})]
+// var staticJobs: Job[] = [new Job({
+//     name: "mega_miner_1",
+//     start: Game.flags['Mine_1_1'],
+//     jobFunc: Roles['megaMiner'],
+//     bodyReq: [WORK, MOVE],
+//     candidateCmp: Cmp['worksHard'],
+// }), new Job({
+//     name: "mega_miner_2",
+//     start: Game.flags['Mine_1_2'],
+//     jobFunc: Roles['megaMiner'],
+//     bodyReq: [WORK, MOVE],
+//     candidateCmp: Cmp['worksHard'],
+// })]
 
 
 
@@ -736,7 +760,7 @@ try {
 
 
 var preJobTs = Game.cpu.getUsed()
-runAllJobs(staticJobs, memJobs)
+runAllJobs(memJobs)
 var postJobTs = Game.cpu.getUsed()
 var toRm : Job[] = []
 for (var job of memJobs) {
