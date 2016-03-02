@@ -264,6 +264,20 @@ var ownedByMe = (struct:Structure): boolean => {
    }
    return roomControlledByMe(struct.room)
 }
+
+
+const TARGET_SCORE_HEAL = 5
+const TARGET_SCORE_ATTACK = 0
+const TARGET_SCORE_SHOOT = 3
+
+var scoreTarget = (src: Screep | Tower, target: Screep) => {
+    var score = src.pos.getRangeTo(target)
+    score += target.howManyParts(HEAL) * TARGET_SCORE_HEAL
+    score += target.howManyParts(ATTACK) * TARGET_SCORE_ATTACK
+    score += target.howManyParts(RANGED_ATTACK) * TARGET_SCORE_SHOOT
+    return score
+}
+
 // TODO: API to add jobs, some way to combine in-memory jobs with in-code jobs
 // fitness func for candidates based on distance.
 var runAllJobs = (jobs: Job[]) => {
@@ -352,7 +366,6 @@ var runAllJobs = (jobs: Job[]) => {
                 }
             }
         }
-        console.log(JSON.stringify(resourcesById))
 
         for (var resource of resources) {
             var currentlyAllocatedCapacity = resourcesById[resource.id] || 0;
@@ -373,6 +386,13 @@ var runAllJobs = (jobs: Job[]) => {
         // Find structures, sort by priority?
         // Eventually tower can consume jobs:? or always separate
         // TODO: buildings/roads/ramparts/walls
+        var enemies = tower.room.find(FIND_HOSTILE_CREEPS)
+        if (enemies.length > 0) {
+            enemies.sort(targetAttactivenessCmp(tower))
+            tower.attack(enemies[0])
+            return
+        }
+
         var structures = tower.room.find(FIND_STRUCTURES)
         structures.sort((a, b) => { return a.hits - b.hits })
         for (var s of structures) {
@@ -412,6 +432,12 @@ var runAllJobs = (jobs: Job[]) => {
             switch (structType) {
                 case STRUCTURE_TOWER:
                     runTower(struct)
+                    if (struct.energy < struct.energyCapacity) {
+                        if (jobsForStruct.length < 3) {
+                            addJob(createFillJob(struct))
+                        }
+                    }
+                    break;
                 case STRUCTURE_SPAWN:
                 case STRUCTURE_EXTENSION:
                     if (struct.energy < struct.energyCapacity) {
@@ -434,15 +460,6 @@ var runAllJobs = (jobs: Job[]) => {
             }
         }
     }
-    // if (room.controller && room.controller.owner && room.controller.owner.username == 'omgbear')
-    //     for (var struct of roomStructures) {
-    //         // todo only repair walls in myrooms
-    //         if (struct.hits < Math.min(struct.hitsMax, 50000) {
-    //             // check it doesnt exist, take into acount above as well
-    //             addJob(createRepairJob(struct))
-    //         }
-    //     }
-    // }
     for (var struct of roomStructures) {
         if (ownedByMe(struct) && needsRepair(struct)) {
             var jobExists:boolean = false
@@ -585,7 +602,7 @@ var runAllJobs = (jobs: Job[]) => {
         //     setJob(creep, j)
         //     runJob(creep, j)
         } else {
-            creep.log("Nothing to do")
+            //creep.log("Nothing to do")
             // TODO: Count # of idle bots, eventually cull weak/old ones
             if (Game.flags['Idle'] != undefined) {
                 creep.moveTo(Game.flags['Idle'])
