@@ -1,9 +1,12 @@
+var VER = 1
+
 /// <reference path="screeps.d.ts" />
 
 interface PositionEntity {
     pos: RoomPosition
     id: string
-    transferEnergy(creep: Creep): number;
+//    transferEnergy(creep: Creep): number;
+    room: Room
 }
 
 interface Screep extends Creep, SuperCreep{

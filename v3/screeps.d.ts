@@ -615,6 +615,7 @@ interface Game {
      */
     notify(message: string, groupInterval: number): void;
 
+    listJobs();
     Roles;
 }
 interface GlobalControlLevel {
@@ -1119,6 +1120,8 @@ interface Room {
      * @returns An object with all the objects of the given type in the specified area
      */
     lookForAtArea(type: string, top: number, left: number, bottom: number, right: number): LookAtResultMatrix;
+
+    structures: Structure[]
 }
 /**
  * An energy source object. Can be harvested by creeps with a WORK body part.
